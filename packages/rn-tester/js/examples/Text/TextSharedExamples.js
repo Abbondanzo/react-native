@@ -9,12 +9,14 @@
  */
 
 import type {RNTesterModuleExample} from '../../types/RNTesterTypes';
-import type {TextLayoutLine} from 'react-native/Libraries/Types/CoreEventTypes';
+import type {TextLayoutEvent} from 'react-native';
 
 import RNTesterText from '../../components/RNTesterText';
 import {useTheme} from '../../components/RNTesterTheme';
 import {useState} from 'react';
 import {StyleSheet, Text, View} from 'react-native';
+
+type TextLayoutLine = TextLayoutEvent['nativeEvent']['lines'][number];
 
 function InlineView(props: {
   textAlign: 'auto' | 'left' | 'right' | 'center' | 'justify',
@@ -242,6 +244,27 @@ const styles = StyleSheet.create({
   },
 });
 
+function LastLineClippingExample(): React.Node {
+  // Wrapped paragraphs at assorted font sizes are prone to the final line being
+  // clipped by one physical pixel after layout rounding (issue #53450). The
+  // border makes any clipping of the last line visible.
+  return (
+    <View>
+      {[11, 12, 13, 14, 15, 16, 17].map(fontSize => (
+        <View
+          key={fontSize}
+          style={{borderWidth: 1, borderColor: '#999999', marginBottom: 6}}>
+          <Text style={{fontSize}}>
+            {`(${fontSize}px) This sentence wraps across multiple lines so the ` +
+              'final line sits near a pixel boundary and must render fully, ' +
+              'without being cut off.'}
+          </Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
 export default [
   {
     title: 'Empty Text',
@@ -276,5 +299,13 @@ export default [
     name: 'textWithLinkRole',
     description: 'Shows the a11y behavior of Text with role="link"',
     render: TextWithLinkRoleExample,
+  },
+  {
+    title: 'Wrapped text last-line clipping',
+    name: 'wrappedLastLineClipping',
+    description:
+      'The final line of wrapped text must render fully, not clipped by one ' +
+      'physical pixel after layout rounding (issue #53450).',
+    render: LastLineClippingExample,
   },
 ] as ReadonlyArray<RNTesterModuleExample>;

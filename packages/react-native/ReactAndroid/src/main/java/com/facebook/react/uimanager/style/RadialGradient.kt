@@ -128,7 +128,11 @@ internal class RadialGradient(
                         else -> colorStop.getInt("color")
                       }
                   val colorStopPosition =
-                      LengthPercentage.setFromDynamic(colorStop.getDynamic("position"))
+                      if (colorStop.hasKey("position") && !colorStop.isNull("position")) {
+                        LengthPercentage.setFromDynamic(colorStop.getDynamic("position"))
+                      } else {
+                        null
+                      }
                   stops.add(ColorStop(color, colorStopPosition))
                 }
                 stops
@@ -339,7 +343,7 @@ internal class RadialGradient(
     var distance =
         sqrt(
             (centerX - corners[cornerIndex].first).pow(2) +
-                (centerY - corners[cornerIndex].second).pow(2)
+                (centerY - corners[cornerIndex].second).pow(2),
         )
     val isClosestCorner = sizeKeyword == GradientSize.KeywordType.CLOSEST_CORNER
 

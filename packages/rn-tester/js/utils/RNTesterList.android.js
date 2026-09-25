@@ -87,6 +87,11 @@ const Components: Array<RNTesterModuleInfo> = [
     module: require('../examples/ScrollView/ScrollViewExample'),
   },
   {
+    key: 'ScrollViewMaintainVisibleContentPositionExample',
+    category: 'Basic',
+    module: require('../examples/ScrollView/ScrollViewMaintainVisibleContentPositionExample'),
+  },
+  {
     key: 'ScrollViewSimpleExample',
     category: 'Basic',
     module: require('../examples/ScrollView/ScrollViewSimpleExample'),
@@ -200,6 +205,11 @@ const APIs: Array<RNTesterModuleInfo> = (
       key: 'ContentURLAndroid',
       category: 'Android',
       module: require('../examples/ContentURLAndroid/ContentURLAndroid'),
+    },
+    {
+      key: 'PhotoPickerAndroid',
+      category: 'Android',
+      module: require('../examples/PhotoPickerAndroid/PhotoPickerAndroid'),
     },
     {
       key: 'URLExample',
@@ -399,6 +409,17 @@ const APIs: Array<RNTesterModuleInfo> = (
             key: 'MutationObserver',
             category: 'UI',
             module: require('../examples/MutationObserver/MutationObserverIndex'),
+          },
+        ]
+      : []),
+    // Basic check to detect the availability of the ResizeObserver API.
+    // $FlowExpectedError[cannot-resolve-name]
+    ...(typeof ResizeObserver === 'function'
+      ? [
+          {
+            key: 'ResizeObserver',
+            category: 'UI',
+            module: require('../examples/ResizeObserver/ResizeObserverIndex'),
           },
         ]
       : []),

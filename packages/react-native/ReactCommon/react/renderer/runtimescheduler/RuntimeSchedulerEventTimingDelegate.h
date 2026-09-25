@@ -7,7 +7,9 @@
 
 #pragma once
 
-#include <react/timing/primitives.h>
+#include <react/cxxstableapi/FrameworksGuard.h>
+
+#include <React/Timing.h>
 #include <unordered_set>
 
 namespace facebook::react {

@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include <react/cxxstableapi/UmbrellaGuard.h>
+
 #include <react/renderer/graphics/ColorComponents.h>
 #include <react/utils/hash_combine.h>
 #include <cmath>
@@ -28,6 +30,9 @@ struct Color {
   int32_t getColor() const;
   std::size_t getUIColorHash() const;
 
+  // Returns the UndefinedColor sentinel (null underlying UIColor) on a miss, so
+  // callers can tell a miss from a name that resolves to transparent. Callers
+  // reaching into getUIColor() must null-check it.
   static Color createSemanticColor(std::vector<std::string> &semanticItems);
 
   std::shared_ptr<void> getUIColor() const

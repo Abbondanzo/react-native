@@ -10,11 +10,14 @@
 
 import '@react-native/fantom/src/setUpDefaultReactNativeEnvironment';
 
-import Event from 'react-native/src/private/webapis/dom/events/Event';
 import {
   setEventInitTimeStamp,
   setInPassiveListenerFlag,
-} from 'react-native/src/private/webapis/dom/events/internals/EventInternals';
+} from '../internals/EventInternals';
+
+type EventOptions = EventInit & {
+  rnIsDirect?: boolean,
+};
 
 describe('Event', () => {
   it('provides read-only constants for event phases', () => {
@@ -109,6 +112,7 @@ describe('Event', () => {
     );
 
     expect(() => {
+      // $FlowFixMe[incompatible-type] The React Native implementation accepts null.
       return new Event('custom', null);
     }).not.toThrow();
 
@@ -121,13 +125,12 @@ describe('Event', () => {
     }).not.toThrow();
 
     expect(() => {
-      // $FlowExpectedError[incompatible-exact]
-      // $FlowExpectedError[prop-missing]
+      // $FlowExpectedError[incompatible-type]
       return new Event('custom', class {});
     }).not.toThrow();
 
     expect(() => {
-      // $FlowExpectedError[incompatible-exact]
+      // $FlowExpectedError[incompatible-type]
       return new Event('custom', () => {});
     }).not.toThrow();
   });
@@ -238,7 +241,7 @@ describe('Event', () => {
 
   it('should use a custom timestamp when set via setEventInitTimeStamp', () => {
     const customTimestamp = 12345.678;
-    const options = {};
+    const options: EventOptions = {};
     setEventInitTimeStamp(options, customTimestamp);
     const event = new Event('custom', options);
 
@@ -246,7 +249,7 @@ describe('Event', () => {
   });
 
   it('should accept zero as a valid custom timestamp', () => {
-    const options = {};
+    const options: EventOptions = {};
     setEventInitTimeStamp(options, 0);
     const event = new Event('custom', options);
 
@@ -300,6 +303,7 @@ describe('Event', () => {
 
       expect(event.defaultPrevented).toBe(false);
 
+      // $FlowFixMe[incompatible-type] The global is backed by this implementation.
       setInPassiveListenerFlag(event, true);
 
       event.preventDefault();
@@ -312,6 +316,50 @@ describe('Event', () => {
       expect(reportedError.message).toBe(
         'Unable to preventDefault inside passive event listener invocation.',
       );
+    });
+  });
+
+  describe('cancelBubble', () => {
+    it('defaults to false', () => {
+      const event = new Event('custom');
+
+      expect(event.cancelBubble).toBe(false);
+    });
+
+    it('stops propagation when set to true', () => {
+      const event = new Event('custom');
+
+      event.cancelBubble = true;
+
+      expect(event.cancelBubble).toBe(true);
+    });
+
+    it('is a no-op when set to false', () => {
+      const event = new Event('custom');
+
+      event.cancelBubble = false;
+      expect(event.cancelBubble).toBe(false);
+
+      // Setting it back to false does not reset a previously set flag.
+      event.cancelBubble = true;
+      event.cancelBubble = false;
+      expect(event.cancelBubble).toBe(true);
+    });
+
+    it('reflects stopPropagation()', () => {
+      const event = new Event('custom');
+
+      event.stopPropagation();
+
+      expect(event.cancelBubble).toBe(true);
+    });
+
+    it('reflects stopImmediatePropagation()', () => {
+      const event = new Event('custom');
+
+      event.stopImmediatePropagation();
+
+      expect(event.cancelBubble).toBe(true);
     });
   });
 });

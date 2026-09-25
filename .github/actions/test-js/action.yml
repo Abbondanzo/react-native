@@ -2,9 +2,9 @@ name: test-js
 description: Runs all the JS tests in the codebase
 inputs:
   node-version:
-    description: "The node.js version to use"
+    description: 'The node.js version to use'
     required: false
-    default: "22"
+    default: '22'
 runs:
   using: composite
   steps:
@@ -19,7 +19,7 @@ runs:
       run: node ./scripts/run-ci-javascript-tests.js --maxWorkers 2
     - name: Upload test results
       if: ${{ always() }}
-      uses: actions/upload-artifact@v6
+      uses: ./.github/actions/upload-artifact
       with:
         name: test-js-results
         compression-level: 1

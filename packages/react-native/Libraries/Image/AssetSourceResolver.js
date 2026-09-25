@@ -10,6 +10,21 @@
 
 'use strict';
 
+import type {
+  AssetDestPathResolver,
+  PackagerAsset,
+} from '../../src/private/assets/AssetRegistry';
+
+import Platform from '../Utilities/Platform';
+
+const PixelRatio = require('../Utilities/PixelRatio').default;
+const {pickScale} = require('./AssetUtils');
+const {
+  getAndroidResourceFolderName,
+  getAndroidResourceIdentifier,
+} = require('@react-native/asset-utils');
+const invariant = require('invariant');
+
 export type ResolvedAssetSource = {
   readonly __packager_asset: boolean,
   readonly width: ?number,
@@ -17,34 +32,6 @@ export type ResolvedAssetSource = {
   readonly uri: string,
   readonly scale: number,
 };
-
-// From @react-native/assets-registry
-type AssetDestPathResolver = 'android' | 'generic';
-
-// From @react-native/assets-registry
-type PackagerAsset = Readonly<{
-  __packager_asset: boolean,
-  fileSystemLocation: string,
-  httpServerLocation: string,
-  width: ?number,
-  height: ?number,
-  scales: Array<number>,
-  hash: string,
-  name: string,
-  type: string,
-  resolver?: AssetDestPathResolver,
-  ...
-}>;
-
-const PixelRatio = require('../Utilities/PixelRatio').default;
-const Platform = require('../Utilities/Platform').default;
-const {pickScale} = require('./AssetUtils');
-const {
-  getAndroidResourceFolderName,
-  getAndroidResourceIdentifier,
-  getBasePath,
-} = require('@react-native/assets-registry/path-support');
-const invariant = require('invariant');
 
 /**
  * Returns a path like 'assets/AwesomeModule/icon@2x.png'
@@ -64,6 +51,11 @@ function getAssetPathInDrawableFolder(asset: PackagerAsset): string {
   const drawableFolder = getAndroidResourceFolderName(asset, scale);
   const fileName = getAndroidResourceIdentifier(asset);
   return drawableFolder + '/' + fileName + '.' + asset.type;
+}
+
+function getBasePath(asset: PackagerAsset): string {
+  const basePath = asset.httpServerLocation;
+  return basePath.startsWith('/') ? basePath.slice(1) : basePath;
 }
 
 /**

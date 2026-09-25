@@ -7,7 +7,9 @@
 
 #pragma once
 
-#include <react/renderer/core/graphicsConversions.h>
+#include <react/cxxstableapi/FrameworksGuard.h>
+
+#include <React/RendererCore.h>
 #include <react/renderer/graphics/Float.h>
 #include "ModalHostViewUtils.h"
 

@@ -16,6 +16,7 @@ import type AnimatedValueXY from '../nodes/AnimatedValueXY';
 import type {AnimationConfig, EndCallback} from './Animation';
 
 import * as ReactNativeFeatureFlags from '../../../src/private/featureflags/ReactNativeFeatureFlags';
+import {getCurrentAnimationTime} from '../AnimationTimingUtils';
 import AnimatedColor from '../nodes/AnimatedColor';
 import Animation from './Animation';
 
@@ -67,8 +68,8 @@ export default class TimingAnimation extends Animation {
   _delay: number;
   _easing: (value: number) => number;
   _onUpdate: (value: number) => void;
-  _animationFrame: ?AnimationFrameID;
-  _timeout: ?TimeoutID;
+  _animationFrame: ?number;
+  _timeout: ?ReturnType<typeof setTimeout>;
   _platformConfig: ?PlatformConfig;
   _deferredStart: boolean;
 
@@ -126,9 +127,10 @@ export default class TimingAnimation extends Animation {
     }
 
     const start = () => {
-      this._startTime = Date.now();
+      this._startTime = getCurrentAnimationTime();
 
       const useNativeDriver = this.__startAnimationIfNative(animatedValue);
+      // TODO: T274006331 - Remove js-only animation once shared backend is fully rolled out
       if (!useNativeDriver) {
         // Animations that sometimes have 0 duration and sometimes do not
         // still need to use the native driver when duration is 0 so as to
@@ -149,7 +151,7 @@ export default class TimingAnimation extends Animation {
   }
 
   onUpdate(): void {
-    const now = Date.now();
+    const now = getCurrentAnimationTime();
     if (now >= this._startTime + this._duration) {
       if (this._duration === 0) {
         this._onUpdate(this._toValue);
@@ -175,6 +177,7 @@ export default class TimingAnimation extends Animation {
 
   stop(): void {
     super.stop();
+    // $FlowFixMe[incompatible-type]
     clearTimeout(this._timeout);
     if (this._animationFrame != null) {
       global.cancelAnimationFrame(this._animationFrame);

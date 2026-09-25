@@ -23,6 +23,7 @@ import android.hardware.SensorManager
 import android.os.Build
 import android.util.Pair
 import android.view.Gravity
+import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
@@ -35,7 +36,6 @@ import androidx.core.util.Supplier
 import com.facebook.common.logging.FLog
 import com.facebook.react.R
 import com.facebook.react.bridge.DefaultJSExceptionHandler
-import com.facebook.react.bridge.JSBundleLoader
 import com.facebook.react.bridge.ReactContext
 import com.facebook.react.bridge.ReactMarker
 import com.facebook.react.bridge.ReactMarkerConstants
@@ -95,12 +95,6 @@ public abstract class DevSupportManagerBase(
     public var devLoadingViewManager: DevLoadingViewManager?,
     private var pausedInDebuggerOverlayManager: PausedInDebuggerOverlayManager?,
 ) : DevSupportManager {
-
-  public interface CallbackWithBundleLoader {
-    public fun onSuccess(bundleLoader: JSBundleLoader)
-
-    public fun onError(url: String, cause: Throwable)
-  }
 
   protected abstract val uniqueTag: String
 
@@ -187,13 +181,11 @@ public abstract class DevSupportManagerBase(
       }
   private val customDevOptions = LinkedHashMap<String, DevOptionHandler>()
   private val jsBundleDownloadedFile: File
-  private val jsSplitBundlesDir: File
   private val defaultJSExceptionHandler: DefaultJSExceptionHandler = DefaultJSExceptionHandler()
   private var redBoxSurfaceDelegate: SurfaceDelegate? = null
   private var devOptionsDialog: AlertDialog? = null
   private var debugOverlayController: DebugOverlayController? = null
   private var devLoadingViewVisible = false
-  private var pendingJSSplitBundleRequests = 0
   private var isReceiverRegistered = false
   private var isShakeDetectorStarted = false
   private var isDevSupportEnabled = false
@@ -224,8 +216,6 @@ public abstract class DevSupportManagerBase(
     val subclassTag = uniqueTag
     val bundleFile = subclassTag + "ReactNativeDevBundle.js"
     jsBundleDownloadedFile = File(applicationContext.filesDir, bundleFile)
-    val splitBundlesDir = subclassTag.lowercase() + "_dev_js_split_bundles"
-    jsSplitBundlesDir = applicationContext.getDir(splitBundlesDir, Context.MODE_PRIVATE)
     devSupportEnabled = enableOnCreate
     if (devLoadingViewManager == null) {
       devLoadingViewManager = DefaultDevLoadingViewImplementation(reactInstanceDevHelper)
@@ -239,7 +229,7 @@ public abstract class DevSupportManagerBase(
                   return@Supplier null
                 }
                 context
-              }
+              },
           )
     }
     if (
@@ -286,7 +276,7 @@ public abstract class DevSupportManagerBase(
   }
 
   override fun processErrorCustomizers(
-      errorInfo: Pair<String, Array<StackFrame>>
+      errorInfo: Pair<String, Array<StackFrame>>,
   ): Pair<String, Array<StackFrame>> {
     var errorInfoLocal = errorInfo
     for (errorCustomizer in errorCustomizers) {
@@ -382,7 +372,7 @@ public abstract class DevSupportManagerBase(
       val debuggerItemString =
           applicationContext.getString(
               if (isConnected) R.string.catalyst_debug_open
-              else R.string.catalyst_debug_open_disabled
+              else R.string.catalyst_debug_open_disabled,
           )
       if (!isConnected) {
         disabledItemKeys.add(debuggerItemString)
@@ -584,7 +574,7 @@ public abstract class DevSupportManagerBase(
                         safeGetDefaultTextColor(context)
                       } else {
                         safeGetTextColorSecondary(context)
-                      }
+                      },
                   )
                 }
               }
@@ -598,6 +588,15 @@ public abstract class DevSupportManagerBase(
               devOptionsDialog = null
             }
             .setOnCancelListener { devOptionsDialog = null }
+            .setOnKeyListener { dialog: DialogInterface, keyCode: Int, event: KeyEvent ->
+              if (keyCode != KeyEvent.KEYCODE_MENU) {
+                return@setOnKeyListener false
+              }
+              if (event.action == KeyEvent.ACTION_UP) {
+                dialog.cancel()
+              }
+              true
+            }
             .create()
 
     devOptionsDialog?.show()
@@ -743,7 +742,7 @@ public abstract class DevSupportManagerBase(
         applicationContext.getString(
             R.string.catalyst_loading_from_url,
             parsedURL.host + ":" + port,
-        )
+        ),
     )
     devLoadingViewVisible = true
   }
@@ -751,7 +750,7 @@ public abstract class DevSupportManagerBase(
   @UiThread
   protected fun showDevLoadingViewForRemoteJSEnabled() {
     devLoadingViewManager?.showMessage(
-        applicationContext.getString(R.string.catalyst_debug_connecting)
+        applicationContext.getString(R.string.catalyst_debug_connecting),
     )
     devLoadingViewVisible = true
   }
@@ -760,64 +759,6 @@ public abstract class DevSupportManagerBase(
   protected fun hideDevLoadingView() {
     devLoadingViewManager?.hide()
     devLoadingViewVisible = false
-  }
-
-  public fun fetchSplitBundleAndCreateBundleLoader(
-      bundlePath: String,
-      callback: CallbackWithBundleLoader,
-  ) {
-    val bundleUrl = devServerHelper.getDevServerSplitBundleURL(bundlePath)
-    // The bundle path may contain the '/' character, which is not allowed in file names.
-    val bundleFile = File(jsSplitBundlesDir, bundlePath.replace("/".toRegex(), "_") + ".jsbundle")
-    UiThreadUtil.runOnUiThread {
-      showSplitBundleDevLoadingView(bundleUrl)
-      devServerHelper.downloadBundleFromURL(
-          object : DevBundleDownloadListener {
-            override fun onSuccess() {
-              UiThreadUtil.runOnUiThread { hideSplitBundleDevLoadingView() }
-
-              val context: ReactContext? = this@DevSupportManagerBase.currentReactContext
-              if (context == null || !context.hasActiveReactInstance()) {
-                return
-              }
-
-              val bundleLoader =
-                  JSBundleLoader.createCachedSplitBundleFromNetworkLoader(
-                      bundleUrl,
-                      bundleFile.absolutePath,
-                  )
-              callback.onSuccess(bundleLoader)
-            }
-
-            override fun onProgress(status: String?, done: Int?, total: Int?, percent: Int?) {
-              devLoadingViewManager?.updateProgress(status, done, total, percent)
-            }
-
-            override fun onFailure(cause: Exception) {
-              UiThreadUtil.runOnUiThread {
-                this@DevSupportManagerBase.hideSplitBundleDevLoadingView()
-              }
-              callback.onError(bundleUrl, cause)
-            }
-          },
-          bundleFile,
-          bundleUrl,
-          null,
-      )
-    }
-  }
-
-  @UiThread
-  private fun showSplitBundleDevLoadingView(bundleUrl: String) {
-    showDevLoadingViewForUrl(bundleUrl)
-    pendingJSSplitBundleRequests++
-  }
-
-  @UiThread
-  private fun hideSplitBundleDevLoadingView() {
-    if (--pendingJSSplitBundleRequests == 0) {
-      hideDevLoadingView()
-    }
   }
 
   override fun isPackagerRunning(callback: PackagerStatusCallback) {
@@ -1019,7 +960,7 @@ public abstract class DevSupportManagerBase(
   }
 
   override fun setPackagerLocationCustomizer(
-      packagerLocationCustomizer: PackagerLocationCustomizer
+      packagerLocationCustomizer: PackagerLocationCustomizer,
   ) {
     this.packagerLocationCustomizer = packagerLocationCustomizer
   }

@@ -106,7 +106,7 @@ class ReactPluginTest {
               }
             }
             """
-                .trimIndent()
+                .trimIndent(),
         )
 
     val result = ReactPlugin().getPureCxxCodegenDependencies(autolinkingFile)

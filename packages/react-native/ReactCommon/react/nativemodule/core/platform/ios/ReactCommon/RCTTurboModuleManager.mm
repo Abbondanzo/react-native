@@ -333,7 +333,6 @@ Class getFallbackClassFromName(const char *name)
    * Use respondsToSelector: below to infer conformance to @protocol(RCTTurboModule). Using conformsToProtocol: is
    * expensive.
    */
-  Class moduleClass = [module class];
   if ([module respondsToSelector:@selector(getTurboModule:)]) {
     ObjCTurboModule::InitParams params = {
         .moduleName = moduleName,
@@ -345,7 +344,7 @@ Class getFallbackClassFromName(const char *name)
 
     auto turboModule = [(id<RCTTurboModule>)module getTurboModule:params];
     if (turboModule == nullptr) {
-      RCTLogError(@"TurboModule \"%@\"'s getTurboModule: method returned nil.", moduleClass);
+      RCTLogError(@"TurboModule \"%@\"'s getTurboModule: method returned nil.", [module class]);
     }
     _turboModuleCache.insert({moduleName, turboModule});
 
@@ -727,9 +726,10 @@ Class getFallbackClassFromName(const char *name)
    * TODO(T41180176): Investigate whether we can delete this after TM
    * rollout.
    */
-  [[NSNotificationCenter defaultCenter] postNotificationName:RCTDidInitializeModuleNotification
-                                                      object:nil
-                                                    userInfo:@{@"module" : module, @"bridge" : [NSNull null]}];
+  [[NSNotificationCenter defaultCenter]
+      postNotificationName:RCTDidInitializeModuleNotification
+                    object:nil
+                  userInfo:@{RCTDidInitializeModuleNotificationModuleKey : module, @"bridge" : [NSNull null]}];
 
   TurboModulePerfLogger::moduleCreateSetUpEnd(moduleName, moduleId);
 
@@ -763,6 +763,10 @@ Class getFallbackClassFromName(const char *name)
   NSString *objcModuleName = [NSString stringWithUTF8String:moduleName];
   NSArray<Class> *modules = RCTGetModuleClasses();
   for (Class current in modules) {
+    // A class without +moduleName has no custom JS name, so it can never match here.
+    if (![current respondsToSelector:@selector(moduleName)]) {
+      continue;
+    }
     NSString *currentModuleName = [current moduleName];
     if ([objcModuleName isEqualToString:currentModuleName]) {
       return current;

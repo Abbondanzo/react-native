@@ -14,6 +14,7 @@ import type AnimatedValue from '../nodes/AnimatedValue';
 import type AnimatedValueXY from '../nodes/AnimatedValueXY';
 import type {AnimationConfig, EndCallback} from './Animation';
 
+import {getCurrentAnimationTime} from '../AnimationTimingUtils';
 import AnimatedColor from '../nodes/AnimatedColor';
 import * as SpringConfig from '../SpringConfig';
 import Animation from './Animation';
@@ -98,12 +99,12 @@ export default class SpringAnimation extends Animation {
   _mass: number;
   _initialVelocity: number;
   _delay: number;
-  _timeout: ?TimeoutID;
+  _timeout: ?ReturnType<typeof setTimeout>;
   _startTime: number;
   _lastTime: number;
   _frameTime: number;
   _onUpdate: (value: number) => void;
-  _animationFrame: ?AnimationFrameID;
+  _animationFrame: ?number;
   _platformConfig: ?PlatformConfig;
 
   constructor(config: SpringAnimationConfigSingle) {
@@ -211,7 +212,7 @@ export default class SpringAnimation extends Animation {
     this._lastPosition = this._startPosition;
 
     this._onUpdate = onUpdate;
-    this._lastTime = Date.now();
+    this._lastTime = getCurrentAnimationTime();
     this._frameTime = 0.0;
 
     if (previousAnimation instanceof SpringAnimation) {
@@ -225,6 +226,7 @@ export default class SpringAnimation extends Animation {
 
     const start = () => {
       const useNativeDriver = this.__startAnimationIfNative(animatedValue);
+      // TODO: T274006331 - Remove js-only animation once shared backend is fully rolled out
       if (!useNativeDriver) {
         this.onUpdate();
       }
@@ -273,7 +275,7 @@ export default class SpringAnimation extends Animation {
     // computation and will continue on the next frame. It's better to have it
     // running at faster speed than jumping to the end.
     const MAX_STEPS = 64;
-    let now = Date.now();
+    let now = getCurrentAnimationTime();
     if (now > this._lastTime + MAX_STEPS) {
       now = this._lastTime + MAX_STEPS;
     }
@@ -364,6 +366,7 @@ export default class SpringAnimation extends Animation {
 
   stop(): void {
     super.stop();
+    // $FlowFixMe[incompatible-type]
     clearTimeout(this._timeout);
     if (this._animationFrame != null) {
       global.cancelAnimationFrame(this._animationFrame);

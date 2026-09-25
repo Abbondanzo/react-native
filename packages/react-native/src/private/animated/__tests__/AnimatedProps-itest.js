@@ -10,10 +10,11 @@
 
 import '@react-native/fantom/src/setUpDefaultReactNativeEnvironment';
 
+import AnimatedProps from '../../../../Libraries/Animated/nodes/AnimatedProps';
+import NativeAnimatedHelper from '../NativeAnimatedHelper';
 import * as Fantom from '@react-native/fantom';
 import * as React from 'react';
 import {Animated} from 'react-native';
-import NativeAnimatedHelper from 'react-native/src/private/animated/NativeAnimatedHelper';
 
 function mockNativeAnimatedHelperAPI() {
   const mocks = {
@@ -57,4 +58,23 @@ test('connects and disconnects views', () => {
 
   // TODO: investigate why previous task enqueues more tasks.
   Fantom.runWorkLoop();
+});
+
+describe('AnimatedProps#__getValue', () => {
+  function getValue(inputProps: {[string]: unknown}) {
+    const animatedProps = new AnimatedProps(inputProps, jest.fn());
+    return animatedProps.__getValue();
+  }
+
+  test('returns original `style` if it has no nodes', () => {
+    const style = {color: 'red'};
+    expect(getValue({style}).style).toBe(style);
+  });
+
+  test('returns original `style` for invalid style values', () => {
+    const values = [undefined, null, function () {}, true, 123, 'foo'];
+    for (const value of values) {
+      expect(getValue({style: value})).toEqual({style: value});
+    }
+  });
 });

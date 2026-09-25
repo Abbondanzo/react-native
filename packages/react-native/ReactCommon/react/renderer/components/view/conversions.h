@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include <react/cxxstableapi/UmbrellaGuard.h>
+
 #include <glog/logging.h>
 #include <react/debug/react_native_expect.h>
 #include <react/featureflags/ReactNativeFeatureFlags.h>
@@ -122,6 +124,10 @@ static inline PositionType positionTypeFromYogaPositionType(yoga::PositionType p
       return PositionType::Relative;
     case yoga::PositionType::Absolute:
       return PositionType::Absolute;
+    default:
+      LOG(ERROR) << "Unexpected yoga::PositionType value: " << static_cast<int>(positionType);
+      react_native_expect(false);
+      return PositionType::Relative;
   }
 }
 
@@ -136,6 +142,10 @@ inline DisplayType displayTypeFromYGDisplay(YGDisplay display)
       return DisplayType::Flex;
     case YGDisplayGrid:
       return DisplayType::Grid;
+    default:
+      LOG(ERROR) << "Unexpected YGDisplay value: " << static_cast<int>(display);
+      react_native_expect(false);
+      return DisplayType::Flex;
   }
 }
 
@@ -183,6 +193,10 @@ inline YGDirection yogaDirectionFromLayoutDirection(LayoutDirection direction)
       return YGDirectionLTR;
     case LayoutDirection::RightToLeft:
       return YGDirectionRTL;
+    default:
+      LOG(ERROR) << "Unexpected LayoutDirection value: " << static_cast<int>(direction);
+      react_native_expect(false);
+      return YGDirectionInherit;
   }
 }
 
@@ -1111,6 +1125,10 @@ inline std::string toString(PointerEventsMode value)
       return "box-none";
     case PointerEventsMode::BoxOnly:
       return "box-only";
+    default:
+      LOG(ERROR) << "Unsupported PointerEventsMode value: " << static_cast<int>(value);
+      react_native_expect(false);
+      return "auto";
   }
 }
 
@@ -1693,6 +1711,10 @@ inline std::string toString(const LayoutConformance &value)
       return "strict";
     case LayoutConformance::Compatibility:
       return "compatibility";
+    default:
+      LOG(ERROR) << "Unsupported LayoutConformance value: " << static_cast<int>(value);
+      react_native_expect(false);
+      return "strict";
   }
 }
 
@@ -1772,6 +1794,10 @@ inline std::string toString(const Transform &transform)
         result += "{\"identity\": true}";
         break;
       }
+      default:
+        LOG(ERROR) << "Unsupported TransformOperationType value: " << static_cast<int>(operation.type);
+        react_native_expect(false);
+        break;
     }
   }
 

@@ -7,7 +7,6 @@
 
 #include "BaseParagraphProps.h"
 
-#include <react/featureflags/ReactNativeFeatureFlags.h>
 #include <react/renderer/attributedstring/conversions.h>
 #include <react/renderer/attributedstring/primitives.h>
 #include <react/renderer/core/propsConversions.h>
@@ -23,32 +22,23 @@ BaseParagraphProps::BaseParagraphProps(
     const RawProps& rawProps)
     : ViewProps(context, sourceProps, rawProps),
       BaseTextProps(context, sourceProps, rawProps),
-      paragraphAttributes(
-          ReactNativeFeatureFlags::enableCppPropsIteratorSetter()
-              ? sourceProps.paragraphAttributes
-              : convertRawProp(
-                    context,
-                    rawProps,
-                    sourceProps.paragraphAttributes,
-                    {})),
-      isSelectable(
-          ReactNativeFeatureFlags::enableCppPropsIteratorSetter()
-              ? sourceProps.isSelectable
-              : convertRawProp(
-                    context,
-                    rawProps,
-                    "selectable",
-                    sourceProps.isSelectable,
-                    false)),
-      onTextLayout(
-          ReactNativeFeatureFlags::enableCppPropsIteratorSetter()
-              ? sourceProps.onTextLayout
-              : convertRawProp(
-                    context,
-                    rawProps,
-                    "onTextLayout",
-                    sourceProps.onTextLayout,
-                    {})) {
+      paragraphAttributes(convertRawProp(
+          context,
+          rawProps,
+          sourceProps.paragraphAttributes,
+          {})),
+      isSelectable(convertRawProp(
+          context,
+          rawProps,
+          "selectable",
+          sourceProps.isSelectable,
+          false)),
+      onTextLayout(convertRawProp(
+          context,
+          rawProps,
+          "onTextLayout",
+          sourceProps.onTextLayout,
+          {})) {
   /*
    * These props are applied to `View`, therefore they must not be a part of
    * base text attributes.
@@ -94,6 +84,12 @@ void BaseParagraphProps::setProp(
         paDefaults,
         value,
         paragraphAttributes,
+        textWidthMode,
+        "experimental_textWidthMode");
+    REBUILD_FIELD_SWITCH_CASE(
+        paDefaults,
+        value,
+        paragraphAttributes,
         adjustsFontSizeToFit,
         "adjustsFontSizeToFit");
     REBUILD_FIELD_SWITCH_CASE(
@@ -108,12 +104,6 @@ void BaseParagraphProps::setProp(
         paragraphAttributes,
         minimumFontSize,
         "minimumFontSize");
-    REBUILD_FIELD_SWITCH_CASE(
-        paDefaults,
-        value,
-        paragraphAttributes,
-        maximumFontSize,
-        "maximumFontSize");
     REBUILD_FIELD_SWITCH_CASE(
         paDefaults,
         value,

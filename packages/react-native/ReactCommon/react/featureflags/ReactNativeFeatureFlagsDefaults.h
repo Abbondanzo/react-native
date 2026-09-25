@@ -4,7 +4,7 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  *
- * @generated SignedSource<<8dfc52502bd539e5e43d547f895a6d33>>
+ * @generated SignedSource<<5c0f5afb3f37733dd6fc94be39bae1b8>>
  */
 
 /**
@@ -18,6 +18,8 @@
  */
 
 #pragma once
+
+#include <react/cxxstableapi/UmbrellaGuard.h>
 
 #include <react/featureflags/ReactNativeFeatureFlagsProvider.h>
 
@@ -75,12 +77,20 @@ class ReactNativeFeatureFlagsDefaults : public ReactNativeFeatureFlagsProvider {
     return false;
   }
 
+  bool enableAndroidAutoOffscreenCompositingForElevation() override {
+    return false;
+  }
+
   bool enableAndroidTextMeasurementOptimizations() override {
     return false;
   }
 
   bool enableBridgelessArchitecture() override {
-    return false;
+    return true;
+  }
+
+  bool enableBufferedCallInvoker() override {
+    return true;
   }
 
   bool enableCppPropsIteratorSetter() override {
@@ -92,10 +102,6 @@ class ReactNativeFeatureFlagsDefaults : public ReactNativeFeatureFlagsProvider {
   }
 
   bool enableDestroyShadowTreeRevisionAsync() override {
-    return false;
-  }
-
-  bool enableDifferentiatorMutationVectorPreallocation() override {
     return false;
   }
 
@@ -115,6 +121,10 @@ class ReactNativeFeatureFlagsDefaults : public ReactNativeFeatureFlagsProvider {
     return false;
   }
 
+  bool enableFabricCommitBranchingMergeOnMainThread() override {
+    return false;
+  }
+
   bool enableFabricLogs() override {
     return false;
   }
@@ -125,6 +135,10 @@ class ReactNativeFeatureFlagsDefaults : public ReactNativeFeatureFlagsProvider {
 
   bool enableFontScaleChangesUpdatingLayout() override {
     return true;
+  }
+
+  bool enableIOSCompressedTextFrameAdjustment() override {
+    return false;
   }
 
   bool enableIOSTextBaselineOffsetPerLine() override {
@@ -139,11 +153,15 @@ class ReactNativeFeatureFlagsDefaults : public ReactNativeFeatureFlagsProvider {
     return false;
   }
 
-  bool enableImageRequestDowngradingForNonVisibleImages() override {
+  bool enableImageTransparentTintColor() override {
     return false;
   }
 
   bool enableImmediateUpdateModeForContentOffsetChanges() override {
+    return false;
+  }
+
+  bool enableImperativeEvents() override {
     return false;
   }
 
@@ -175,16 +193,16 @@ class ReactNativeFeatureFlagsDefaults : public ReactNativeFeatureFlagsProvider {
     return false;
   }
 
+  bool enableMountingCoordinatorPullModelAndroid() override {
+    return false;
+  }
+
   bool enableMutationObserverByDefault() override {
     return false;
   }
 
   bool enableNativeCSSParsing() override {
     return false;
-  }
-
-  bool enableNetworkEventReporting() override {
-    return true;
   }
 
   bool enablePreparedTextLayout() override {
@@ -195,11 +213,7 @@ class ReactNativeFeatureFlagsDefaults : public ReactNativeFeatureFlagsProvider {
     return false;
   }
 
-  bool enableRuntimeSchedulerQueueClearingOnError() override {
-    return false;
-  }
-
-  bool enableSchedulerDelegateInvalidation() override {
+  bool enableResizeObserverByDefault() override {
     return false;
   }
 
@@ -235,10 +249,6 @@ class ReactNativeFeatureFlagsDefaults : public ReactNativeFeatureFlagsProvider {
     return false;
   }
 
-  bool fixDifferentiatorParentTagForUnflattenCase() override {
-    return false;
-  }
-
   bool fixMappingOfEventPrioritiesBetweenFabricAndReact() override {
     return false;
   }
@@ -259,15 +269,11 @@ class ReactNativeFeatureFlagsDefaults : public ReactNativeFeatureFlagsProvider {
     return false;
   }
 
-  bool fuseboxNetworkInspectionEnabled() override {
+  bool fuseboxScreenshotCaptureEnabled() override {
     return true;
   }
 
-  bool fuseboxScreenshotCaptureEnabled() override {
-    return false;
-  }
-
-  bool hideOffscreenVirtualViewsOnIOS() override {
+  bool fuseboxWebSocketEventsEnabled() override {
     return false;
   }
 
@@ -344,10 +350,6 @@ class ReactNativeFeatureFlagsDefaults : public ReactNativeFeatureFlagsProvider {
   }
 
   bool useNestedScrollViewAndroid() override {
-    return false;
-  }
-
-  bool useOptimizedViewRegistryOnAndroid() override {
     return false;
   }
 

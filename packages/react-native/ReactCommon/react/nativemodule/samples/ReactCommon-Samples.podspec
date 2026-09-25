@@ -54,11 +54,13 @@ Pod::Spec.new do |s|
   s.dependency "React-cxxreact"
   s.dependency "React-jsi"
   s.dependency "RCTTypeSafety"
-  add_dependency(s, "React-RCTFBReactNativeSpec")
+  s.dependency "ReactCodegen"
   add_dependency(s, "ReactCommon", :subspec => "turbomodule/core", :additional_framework_paths => ["react/nativemodule/core"])
   add_dependency(s, "React-NativeModulesApple")
 
   depend_on_js_engine(s)
   add_rn_third_party_dependencies(s)
   add_rncore_dependency(s)
+
+  mark_as_react_native_build(s)
 end

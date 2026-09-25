@@ -7,10 +7,13 @@
 
 #pragma once
 
+#include <react/cxxstableapi/FrameworksGuard.h>
+
 #include <react/renderer/mounting/MountingCoordinator.h>
 
 namespace facebook::react {
 
+class LayoutableShadowNode;
 class ShadowTree;
 struct ShadowTreeCommitOptions;
 
@@ -44,10 +47,15 @@ class ShadowTreeDelegate {
   virtual void shadowTreeDidFinishReactCommit(const ShadowTree &shadowTree) const = 0;
 
   /*
-   * Called right after Shadow Tree promotes a React revision of the tree to
-   * be merged.
+   * Called right after a Shadow Tree commits a new tree, reporting the nodes
+   * whose layout changed in this commit.
    */
-  virtual void shadowTreeDidPromoteReactRevision(const ShadowTree &shadowTree) const = 0;
+  virtual void shadowTreeDidCommit(
+      const ShadowTree & /*shadowTree*/,
+      const RootShadowNode::Shared & /*rootShadowNode*/,
+      const std::vector<const LayoutableShadowNode *> & /*affectedLayoutableNodes*/) const
+  {
+  }
 
   virtual ~ShadowTreeDelegate() noexcept = default;
 };

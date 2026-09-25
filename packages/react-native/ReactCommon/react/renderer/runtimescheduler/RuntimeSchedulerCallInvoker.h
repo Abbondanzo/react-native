@@ -7,7 +7,9 @@
 
 #pragma once
 
-#include <ReactCommon/CallInvoker.h>
+#include <react/cxxstableapi/FrameworksGuard.h>
+
+#include <React/CallInvoker.h>
 #include <memory>
 
 namespace facebook::react {
@@ -17,7 +19,9 @@ class RuntimeScheduler;
  * Exposes RuntimeScheduler to native modules. All calls invoked on JavaScript
  * queue from native modules will be funneled through RuntimeScheduler.
  */
-class RuntimeSchedulerCallInvoker : public CallInvoker {
+class [[deprecated(
+    "Use ReactInstance::createJSCallInvoker(), which shares the instance's buffered runtime executor so async calls are ordered against callable module calls")]]
+RuntimeSchedulerCallInvoker : public CallInvoker {
  public:
   RuntimeSchedulerCallInvoker(std::weak_ptr<RuntimeScheduler> runtimeScheduler);
 

@@ -8,10 +8,7 @@
  * @flow strict-local
  */
 
-import type {HostInstance} from 'react-native';
-import type {PublicScrollViewInstance} from 'react-native/Libraries/Components/ScrollView/ScrollView';
-import type {ViewStyleProp} from 'react-native/Libraries/StyleSheet/StyleSheet';
-import type IntersectionObserverType from 'react-native/src/private/webapis/intersectionobserver/IntersectionObserver';
+import type {HostInstance, ScrollViewInstance} from 'react-native';
 
 import {RNTesterThemeContext} from '../../components/RNTesterTheme';
 import * as React from 'react';
@@ -24,7 +21,7 @@ import {
 } from 'react';
 import {Button, ScrollView, StyleSheet, Text, View} from 'react-native';
 
-declare var IntersectionObserver: Class<IntersectionObserverType>;
+type ViewStyleProp = NonNullable<React.PropOf<View, 'style'>>;
 
 export const name = 'IntersectionObserver Explicit Root MDN Example';
 export const title = name;
@@ -42,8 +39,8 @@ component IntersectionObserverExplicitRootScrollExample() {
   const [observationRoot, setObservationRoot] = useState<?HostInstance>(null);
 
   const [showMargin, setShowMargin] = useState(true);
-  const roofRef: React.RefSetter<PublicScrollViewInstance> = useCallback(
-    (rootNode: ?PublicScrollViewInstance) => {
+  const roofRef: React.RefSetter<ScrollViewInstance> = useCallback(
+    (rootNode: ?ScrollViewInstance) => {
       if (rootNode != null) {
         setObservationRoot(rootNode);
       }
@@ -122,10 +119,11 @@ function ListItem(props: {
           setIntersectionRootRatio(entry.rnRootIntersectionRatio);
         });
       },
+      // $FlowFixMe[incompatible-type] React Native host instances implement the global Element interface.
       {
         threshold: props.threshold,
         rnRootThreshold: props.rootThreshold,
-        // $FlowFixMe[incompatible-type]
+        // $FlowFixMe[incompatible-type] React Native host instances implement the global Element interface.
         root: props.rootNode,
       },
     );

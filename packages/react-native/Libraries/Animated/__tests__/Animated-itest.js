@@ -13,13 +13,12 @@ import '@react-native/fantom/src/setUpDefaultReactNativeEnvironment';
 
 import type {HostInstance} from 'react-native';
 
-import ensureInstance from '../../../src/private/__tests__/utilities/ensureInstance';
 import * as ReactNativeFeatureFlags from '../../../src/private/featureflags/ReactNativeFeatureFlags';
 import * as Fantom from '@react-native/fantom';
+import nullthrows from 'nullthrows';
+import * as React from 'react';
 import {createRef} from 'react';
-import {Animated, View, useAnimatedValue} from 'react-native';
-import {allowStyleProp} from 'react-native/Libraries/Animated/NativeAnimatedAllowlist';
-import ReactNativeElement from 'react-native/src/private/webapis/dom/nodes/ReactNativeElement';
+import {Animated, Easing, View, useAnimatedValue} from 'react-native';
 
 // Deferred start outputs the initial value on the first animation frame and
 // re-anchors timing on the second. This delays animation progress by one
@@ -54,7 +53,7 @@ test('moving box by 100 points', () => {
     root.render(<MyApp />);
   });
 
-  const viewElement = ensureInstance(viewRef.current, ReactNativeElement);
+  const viewElement = nullthrows(viewRef.current);
 
   expect(viewElement.getBoundingClientRect().x).toBe(0);
 
@@ -87,6 +86,123 @@ test('moving box by 100 points', () => {
   expect(viewElement.getBoundingClientRect().x).toBe(100);
 });
 
+// A native-driven interpolation with a custom `easing` should follow the easing
+// curve, not run linearly. The driver animates linearly 0 -> 1; the eased
+// interpolation maps it to translateX 0 -> 100 with Easing.quad (t^2). At the
+// midpoint (driver = 0.5) the eased value is 0.5^2 * 100 = 25 (a linear mapping
+// would be 50). The easing is baked into the native interpolation config as an
+// `easingStops` lookup table, so the native driver reproduces the curve.
+test('native-driven interpolation honors custom easing', () => {
+  let _progress;
+  const viewRef = createRef<HostInstance>();
+
+  function MyApp() {
+    const progress = useAnimatedValue(0);
+    _progress = progress;
+    const translateX = progress.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0, 100],
+      easing: Easing.quad,
+    });
+    return (
+      <Animated.View
+        ref={viewRef}
+        style={[{width: 100, height: 100}, {transform: [{translateX}]}]}
+      />
+    );
+  }
+
+  const root = Fantom.createRoot();
+
+  Fantom.runTask(() => {
+    root.render(<MyApp />);
+  });
+
+  const viewElement = nullthrows(viewRef.current);
+
+  Fantom.runTask(() => {
+    Animated.timing(_progress, {
+      toValue: 1,
+      duration: 1000, // 1 second
+      easing: Easing.linear,
+      useNativeDriver: true,
+    }).start();
+  });
+
+  Fantom.unstable_produceFramesForDuration(500 + DEFERRED_START_MS);
+
+  const transform =
+    // $FlowFixMe[incompatible-use]
+    Fantom.unstable_getDirectManipulationProps(viewElement).transform[0];
+
+  // Driver is 50% through (linear timing), but the interpolation's quad easing
+  // reshapes it: 0.5^2 * 100 = 25, not the linear 50.
+  expect(transform.translateX).toBeCloseTo(25, 0.001);
+
+  Fantom.unstable_produceFramesForDuration(500);
+
+  // Animation complete; final committed position is the full 100.
+  Fantom.runWorkLoop();
+  expect(viewElement.getBoundingClientRect().x).toBe(100);
+});
+
+// When the easing leaves [0, 1] (Easing.back dips below 0 early), that excursion
+// must be preserved even under `extrapolate: 'clamp'`. The driver runs 0 -> 1, so
+// the input is always in range — `clamp` should only affect out-of-range *input*,
+// never the easing's own excursion. Pre-fix the native driver clamped it away
+// (translateX pinned to 0); JS keeps it negative. This guards that parity.
+test('native-driven interpolation preserves easing overshoot under clamp', () => {
+  let _progress;
+  const viewRef = createRef<HostInstance>();
+
+  function MyApp() {
+    const progress = useAnimatedValue(0);
+    _progress = progress;
+    const translateX = progress.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0, 100],
+      easing: Easing.back(),
+      extrapolate: 'clamp',
+    });
+    return (
+      <Animated.View
+        ref={viewRef}
+        style={[{width: 100, height: 100}, {transform: [{translateX}]}]}
+      />
+    );
+  }
+
+  const root = Fantom.createRoot();
+
+  Fantom.runTask(() => {
+    root.render(<MyApp />);
+  });
+
+  const viewElement = nullthrows(viewRef.current);
+
+  Fantom.runTask(() => {
+    Animated.timing(_progress, {
+      toValue: 1,
+      duration: 1000,
+      easing: Easing.linear,
+      useNativeDriver: true,
+    }).start();
+  });
+
+  // ~20% through: Easing.back(0.2) ≈ -0.046 -> translateX ≈ -4.6, i.e. negative.
+  // If the excursion were clamped (the bug), translateX would stay at 0.
+  Fantom.unstable_produceFramesForDuration(200 + DEFERRED_START_MS);
+  const transform =
+    // $FlowFixMe[incompatible-use]
+    Fantom.unstable_getDirectManipulationProps(viewElement).transform[0];
+  expect(transform.translateX).toBeLessThan(0);
+
+  // Completes at the in-range endpoint (Easing.back(1) === 1 -> 100).
+  Fantom.unstable_produceFramesForDuration(800);
+  Fantom.runWorkLoop();
+  expect(viewElement.getBoundingClientRect().x).toBe(100);
+});
+
 // Validate that a `useNativeDriver` timing animation does not begin progressing
 // until the end of the event loop tick it was started in.
 //
@@ -114,7 +230,7 @@ function startTimingAnimationAndGetTranslateXAfterFirstFrame(): number {
     root.render(<MyApp />);
   });
 
-  const viewElement = ensureInstance(viewRef.current, ReactNativeElement);
+  const viewElement = nullthrows(viewRef.current);
 
   Fantom.runTask(() => {
     Animated.timing(_translateX, {
@@ -209,11 +325,8 @@ test('animation driven by onScroll event', () => {
     root.render(<PressableWithNativeDriver />);
   });
 
-  const scrollViewelement = ensureInstance(
-    scrollViewRef.current,
-    ReactNativeElement,
-  );
-  const viewElement = ensureInstance(viewRef.current, ReactNativeElement);
+  const scrollViewelement = nullthrows(scrollViewRef.current);
+  const viewElement = nullthrows(viewRef.current);
 
   Fantom.scrollTo(scrollViewelement, {
     x: 0,
@@ -280,10 +393,7 @@ test('animation driven by onScroll event when animated view is unmounted', () =>
     root.render(<PressableWithNativeDriver mountAnimatedView={false} />);
   });
 
-  const scrollViewelement = ensureInstance(
-    scrollViewRef.current,
-    ReactNativeElement,
-  );
+  const scrollViewelement = nullthrows(scrollViewRef.current);
 
   Fantom.scrollTo(scrollViewelement, {
     x: 0,
@@ -321,7 +431,7 @@ test('animated opacity', () => {
     root.render(<MyApp />);
   });
 
-  const viewElement = ensureInstance(viewRef.current, ReactNativeElement);
+  const viewElement = nullthrows(viewRef.current);
 
   expect(viewElement.getBoundingClientRect().x).toBe(0);
 
@@ -375,7 +485,7 @@ test('moving box by 50 points with offset 10', () => {
     root.render(<MyApp />);
   });
 
-  const viewElement = ensureInstance(viewRef.current, ReactNativeElement);
+  const viewElement = nullthrows(viewRef.current);
 
   expect(viewElement.getBoundingClientRect().x).toBe(0);
 
@@ -475,11 +585,8 @@ describe('Value.flattenOffset', () => {
       _onScroll.addListener(fn);
     });
 
-    const scrollViewelement = ensureInstance(
-      scrollViewRef.current,
-      ReactNativeElement,
-    );
-    const viewElement = ensureInstance(viewRef.current, ReactNativeElement);
+    const scrollViewelement = nullthrows(scrollViewRef.current);
+    const viewElement = nullthrows(viewRef.current);
 
     Fantom.scrollTo(scrollViewelement, {
       x: 0,
@@ -559,11 +666,8 @@ describe('Value.extractOffset', () => {
       _onScroll.addListener(fn);
     });
 
-    const scrollViewelement = ensureInstance(
-      scrollViewRef.current,
-      ReactNativeElement,
-    );
-    const viewElement = ensureInstance(viewRef.current, ReactNativeElement);
+    const scrollViewelement = nullthrows(scrollViewRef.current);
+    const viewElement = nullthrows(viewRef.current);
 
     Fantom.scrollTo(scrollViewelement, {
       x: 0,
@@ -606,8 +710,9 @@ describe('Value.extractOffset', () => {
 });
 
 test('animate layout props', () => {
-  const viewRef = createRef<HostInstance>();
-  allowStyleProp('height');
+  if (!ReactNativeFeatureFlags.useSharedAnimatedBackend()) {
+    return;
+  }
 
   let _animatedHeight;
   let _heightAnimation;
@@ -617,7 +722,6 @@ test('animate layout props', () => {
     _animatedHeight = animatedHeight;
     return (
       <Animated.View
-        ref={viewRef}
         style={[
           {
             width: 100,
@@ -634,8 +738,6 @@ test('animate layout props', () => {
     root.render(<MyApp />);
   });
 
-  const viewElement = ensureInstance(viewRef.current, ReactNativeElement);
-
   Fantom.runTask(() => {
     _heightAnimation = Animated.timing(_animatedHeight, {
       toValue: 100,
@@ -650,18 +752,6 @@ test('animate layout props', () => {
   Fantom.runTask(() => {
     _heightAnimation?.stop();
   });
-
-  // animation backend does not push layut updates through the direct manipulation path
-  // also it's changes are not currently reflected in the getFabricUpdateProps method, as
-  // it only captures props that are updated through UIManager::updateShadowTree
-  if (!ReactNativeFeatureFlags.useSharedAnimatedBackend()) {
-    // $FlowFixMe[incompatible-use]
-    expect(Fantom.unstable_getDirectManipulationProps(viewElement).height).toBe(
-      100,
-    );
-
-    expect(Fantom.unstable_getFabricUpdateProps(viewElement).height).toBe(100);
-  }
 
   expect(root.getRenderedOutput({props: ['height']}).toJSX()).toEqual(
     <rn-view height="100" />,
@@ -702,7 +792,7 @@ test('AnimatedValue.interpolate', () => {
     root.render(<MyApp outputRangeX={1} />);
   });
 
-  const viewElement = ensureInstance(viewRef.current, ReactNativeElement);
+  const viewElement = nullthrows(viewRef.current);
 
   expect(_valueX?.__getValue()).toBe(0.5);
   expect(_interpolatedValueX?.__getValue()).toBe(50);
@@ -774,7 +864,7 @@ test('Animated.sequence', () => {
     root.render(<MyApp />);
   });
 
-  const element = ensureInstance(elementRef.current, ReactNativeElement);
+  const element = nullthrows(elementRef.current);
 
   expect(element.getBoundingClientRect().y).toBe(0);
 

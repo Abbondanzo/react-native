@@ -11,15 +11,15 @@
 
 import '@react-native/fantom/src/setUpDefaultReactNativeEnvironment';
 
-import type {AccessibilityProps, HostInstance} from 'react-native';
+import type {HostInstance} from 'react-native';
+import type {AccessibilityProps} from 'react-native';
 
+import accessibilityPropsSuite from '../../../../src/private/__tests__/utilities/accessibilityPropsSuite';
 import * as Fantom from '@react-native/fantom';
+import nullthrows from 'nullthrows';
 import * as React from 'react';
 import {createRef} from 'react';
 import {Text, TouchableHighlight, View} from 'react-native';
-import accessibilityPropsSuite from 'react-native/src/private/__tests__/utilities/accessibilityPropsSuite';
-import ensureInstance from 'react-native/src/private/__tests__/utilities/ensureInstance';
-import ReactNativeElement from 'react-native/src/private/webapis/dom/nodes/ReactNativeElement';
 
 describe('<TouchableHighlight>', () => {
   describe('props', () => {
@@ -214,7 +214,7 @@ describe('<TouchableHighlight>', () => {
           );
         });
 
-        const element = ensureInstance(elementRef.current, ReactNativeElement);
+        const element = nullthrows(elementRef.current);
         Fantom.dispatchNativeEvent(element, 'click');
 
         expect(onPressCallback).toHaveBeenCalledTimes(1);
@@ -240,7 +240,7 @@ describe('<TouchableHighlight>', () => {
           );
         });
 
-        const element = ensureInstance(elementRef.current, ReactNativeElement);
+        const element = nullthrows(elementRef.current);
         Fantom.dispatchNativeEvent(element, 'click');
 
         expect(onShowUnderlayCallback).toHaveBeenCalledTimes(1);
@@ -265,7 +265,7 @@ describe('<TouchableHighlight>', () => {
           );
         });
 
-        const element = ensureInstance(elementRef.current, ReactNativeElement);
+        const element = nullthrows(elementRef.current);
         Fantom.dispatchNativeEvent(element, 'click');
 
         expect(onPressCallback).toHaveBeenCalledTimes(0);
@@ -285,7 +285,7 @@ describe('<TouchableHighlight>', () => {
         expect(
           root.getRenderedOutput({props: ['accessibilityState']}).toJSX(),
         ).toEqual(
-          <rn-view accessibilityState="{disabled:true,selected:false,checked:None,busy:false,expanded:null}" />,
+          <rn-view accessibilityState="{disabled:true,selected:null,checked:None,busy:false,expanded:null}" />,
         );
       });
 
@@ -303,7 +303,7 @@ describe('<TouchableHighlight>', () => {
         expect(
           root.getRenderedOutput({props: ['accessibilityState']}).toJSX(),
         ).toEqual(
-          <rn-view accessibilityState="{disabled:true,selected:false,checked:None,busy:false,expanded:null}" />,
+          <rn-view accessibilityState="{disabled:true,selected:null,checked:None,busy:false,expanded:null}" />,
         );
       });
 
@@ -323,7 +323,7 @@ describe('<TouchableHighlight>', () => {
         expect(
           root.getRenderedOutput({props: ['accessibilityState']}).toJSX(),
         ).toEqual(
-          <rn-view accessibilityState="{disabled:true,selected:false,checked:Checked,busy:false,expanded:null}" />,
+          <rn-view accessibilityState="{disabled:true,selected:null,checked:Checked,busy:false,expanded:null}" />,
         );
       });
 
@@ -343,7 +343,7 @@ describe('<TouchableHighlight>', () => {
         expect(
           root.getRenderedOutput({props: ['accessibilityState']}).toJSX(),
         ).toEqual(
-          <rn-view accessibilityState="{disabled:true,selected:false,checked:None,busy:false,expanded:null}" />,
+          <rn-view accessibilityState="{disabled:true,selected:null,checked:None,busy:false,expanded:null}" />,
         );
       });
 
@@ -367,10 +367,10 @@ describe('<TouchableHighlight>', () => {
         expect(
           root.getRenderedOutput({props: ['accessibilityState']}).toJSX(),
         ).toEqual(
-          <rn-view accessibilityState="{disabled:true,selected:false,checked:None,busy:false,expanded:null}" />,
+          <rn-view accessibilityState="{disabled:true,selected:null,checked:None,busy:false,expanded:null}" />,
         );
 
-        const element = ensureInstance(elementRef.current, ReactNativeElement);
+        const element = nullthrows(elementRef.current);
         Fantom.dispatchNativeEvent(element, 'click');
 
         expect(onPressCallback).toHaveBeenCalledTimes(0);
@@ -455,7 +455,7 @@ describe('<TouchableHighlight>', () => {
           );
         });
 
-        expect(elementRef.current).toBeInstanceOf(ReactNativeElement);
+        expect(elementRef.current).toBeInstanceOf(HTMLElement);
       });
 
       it('uses the "RN:View" tag name', () => {
@@ -471,7 +471,7 @@ describe('<TouchableHighlight>', () => {
           );
         });
 
-        const element = ensureInstance(elementRef.current, ReactNativeElement);
+        const element = nullthrows(elementRef.current);
         expect(element.tagName).toBe('RN:View');
       });
     });

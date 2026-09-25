@@ -7,7 +7,10 @@
 
 #pragma once
 
-#include <react/debug/react_native_assert.h>
+#include <react/cxxstableapi/FrameworksGuard.h>
+
+#include <React/Debug.h>
+#include <React/MapBuffer.h>
 #include <react/renderer/attributedstring/AttributedString.h>
 #include <react/renderer/attributedstring/ParagraphAttributes.h>
 #include <react/renderer/textlayoutmanager/TextLayoutManager.h>
@@ -15,7 +18,6 @@
 
 #include <fbjni/fbjni.h>
 #include <folly/dynamic.h>
-#include <react/renderer/mapbuffer/MapBuffer.h>
 
 #include <utility>
 

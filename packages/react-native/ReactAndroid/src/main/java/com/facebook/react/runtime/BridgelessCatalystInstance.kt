@@ -34,7 +34,7 @@ import com.facebook.react.turbomodule.core.interfaces.NativeMethodCallInvokerHol
 
 @Deprecated(
     message =
-        "This class is deprecated, please to migrate to new architecture using [com.facebook.react.defaults.DefaultReactHost] instead."
+        "This class is deprecated, please to migrate to new architecture using [com.facebook.react.defaults.DefaultReactHost] instead.",
 )
 @LegacyArchitecture(logLevel = LegacyArchitectureLogLevel.ERROR)
 @FrameworkAPI
@@ -54,10 +54,6 @@ internal class BridgelessCatalystInstance(private val reactHost: ReactHostImpl) 
 
   override fun loadScriptFromFile(fileName: String, sourceURL: String, loadSynchronously: Boolean) {
     throw UnsupportedOperationException("Unimplemented method 'loadScriptFromFile'")
-  }
-
-  override fun loadSplitBundleFromFile(fileName: String, sourceURL: String) {
-    throw UnsupportedOperationException("Unimplemented method 'loadSplitBundleFromFile'")
   }
 
   override fun setSourceURLs(deviceURL: String, remoteURL: String) {
@@ -111,7 +107,7 @@ internal class BridgelessCatalystInstance(private val reactHost: ReactHostImpl) 
   override val nativeMethodCallInvokerHolder: NativeMethodCallInvokerHolder
     get() =
         throw UnsupportedOperationException(
-            "Unimplemented method 'getNativeMethodCallInvokerHolder'"
+            "Unimplemented method 'getNativeMethodCallInvokerHolder'",
         )
 
   override fun <T : NativeModule> hasNativeModule(nativeModuleInterface: Class<T>): Boolean =
@@ -156,7 +152,7 @@ internal class BridgelessCatalystInstance(private val reactHost: ReactHostImpl) 
 
   @Deprecated(
       message =
-          "This class is deprecated, please migrate to new architecture using [com.facebook.react.defaults.DefaultReactHost] instead."
+          "This class is deprecated, please migrate to new architecture using [com.facebook.react.defaults.DefaultReactHost] instead.",
   )
   override fun setTurboModuleRegistry(turboModuleRegistry: TurboModuleRegistry) {
     throw UnsupportedOperationException("Unimplemented method 'setTurboModuleRegistry'")
@@ -164,7 +160,7 @@ internal class BridgelessCatalystInstance(private val reactHost: ReactHostImpl) 
 
   @Deprecated(
       message =
-          "This class is deprecated, please migrate to new architecture using [com.facebook.react.defaults.DefaultReactHost] instead."
+          "This class is deprecated, please migrate to new architecture using [com.facebook.react.defaults.DefaultReactHost] instead.",
   )
   override fun setFabricUIManager(fabricUIManager: UIManager) {
     throw UnsupportedOperationException("Unimplemented method 'setFabricUIManager'")
@@ -172,7 +168,7 @@ internal class BridgelessCatalystInstance(private val reactHost: ReactHostImpl) 
 
   @Deprecated(
       message =
-          "This class is deprecated, please to migrate to new architecture using [com.facebook.react.defaults.DefaultReactHost] instead."
+          "This class is deprecated, please to migrate to new architecture using [com.facebook.react.defaults.DefaultReactHost] instead.",
   )
   override fun getFabricUIManager(): UIManager {
     throw UnsupportedOperationException("Unimplemented method 'getFabricUIManager'")

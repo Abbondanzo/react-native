@@ -13,11 +13,10 @@ import '@react-native/fantom/src/setUpDefaultReactNativeEnvironment';
 
 import type {HostInstance} from 'react-native';
 
-import ensureInstance from '../../../__tests__/utilities/ensureInstance';
 import * as Fantom from '@react-native/fantom';
+import nullthrows from 'nullthrows';
 import * as React from 'react';
 import {View} from 'react-native';
-import ReactNativeElement from 'react-native/src/private/webapis/dom/nodes/ReactNativeElement';
 
 describe('ViewFlattening', () => {
   /**
@@ -447,6 +446,73 @@ describe('ViewFlattening', () => {
       />,
     );
   });
+
+  test('#58647: child with negative zIndex is kept when its parent flattens and its grandparent unflattens', () => {
+    const root = Fantom.createRoot();
+
+    function render(opacityOnGrandparent: boolean) {
+      Fantom.runTask(() => {
+        root.render(
+          <View nativeID="Q" style={{opacity: 0.5}}>
+            <View style={opacityOnGrandparent ? {opacity: 0.5} : null}>
+              <View style={opacityOnGrandparent ? null : {opacity: 0.5}}>
+                <View nativeID="A" />
+                <View nativeID="K" style={{zIndex: -1}} />
+                <View nativeID="B" />
+              </View>
+            </View>
+          </View>,
+        );
+      });
+    }
+
+    const expectedOutput = (
+      <rn-view nativeID="Q">
+        <rn-view>
+          <rn-view key="0" nativeID="K" />
+          <rn-view key="1" nativeID="A" />
+          <rn-view key="2" nativeID="B" />
+        </rn-view>
+      </rn-view>
+    );
+
+    render(false);
+    root.takeMountingManagerLogs();
+
+    render(true);
+    expect(root.takeMountingManagerLogs()).toEqual([
+      'Remove {type: "View", parentNativeID: "Q", index: 0, nativeID: (N/A)}',
+      'Remove {type: "View", parentNativeID: (N/A), index: 2, nativeID: "B"}',
+      'Remove {type: "View", parentNativeID: (N/A), index: 1, nativeID: "A"}',
+      'Remove {type: "View", parentNativeID: (N/A), index: 0, nativeID: "K"}',
+      'Delete {type: "View", nativeID: (N/A)}',
+      'Create {type: "View", nativeID: (N/A)}',
+      'Insert {type: "View", parentNativeID: "Q", index: 0, nativeID: (N/A)}',
+      'Insert {type: "View", parentNativeID: (N/A), index: 0, nativeID: "K"}',
+      'Insert {type: "View", parentNativeID: (N/A), index: 1, nativeID: "A"}',
+      'Insert {type: "View", parentNativeID: (N/A), index: 2, nativeID: "B"}',
+    ]);
+    expect(root.getRenderedOutput({props: ['nativeID']}).toJSX()).toEqual(
+      expectedOutput,
+    );
+
+    render(false);
+    expect(root.takeMountingManagerLogs()).toEqual([
+      'Remove {type: "View", parentNativeID: (N/A), index: 2, nativeID: "B"}',
+      'Remove {type: "View", parentNativeID: (N/A), index: 1, nativeID: "A"}',
+      'Remove {type: "View", parentNativeID: (N/A), index: 0, nativeID: "K"}',
+      'Remove {type: "View", parentNativeID: "Q", index: 0, nativeID: (N/A)}',
+      'Delete {type: "View", nativeID: (N/A)}',
+      'Create {type: "View", nativeID: (N/A)}',
+      'Insert {type: "View", parentNativeID: (N/A), index: 0, nativeID: "K"}',
+      'Insert {type: "View", parentNativeID: (N/A), index: 1, nativeID: "A"}',
+      'Insert {type: "View", parentNativeID: (N/A), index: 2, nativeID: "B"}',
+      'Insert {type: "View", parentNativeID: "Q", index: 0, nativeID: (N/A)}',
+    ]);
+    expect(root.getRenderedOutput({props: ['nativeID']}).toJSX()).toEqual(
+      expectedOutput,
+    );
+  });
 });
 
 describe('reconciliation of setNativeProps and React commit', () => {
@@ -474,7 +540,7 @@ describe('reconciliation of setNativeProps and React commit', () => {
       <rn-view nativeID={'first native id'} testID={'first test id'} />,
     );
 
-    const element = ensureInstance(nodeRef.current, ReactNativeElement);
+    const element = nullthrows(nodeRef.current);
 
     Fantom.runTask(() => {
       // Calling `setNativeProps` forces bug https://github.com/facebook/react-native/issues/47476 to manifest.
@@ -534,7 +600,7 @@ describe('reconciliation of setNativeProps and React commit', () => {
         .toJSX(),
     ).toEqual(<rn-view nativeID={'first native id'} />);
 
-    const element = ensureInstance(nodeRef.current, ReactNativeElement);
+    const element = nullthrows(nodeRef.current);
 
     Fantom.runTask(() => {
       element.setNativeProps({nativeID: 'second native id'});

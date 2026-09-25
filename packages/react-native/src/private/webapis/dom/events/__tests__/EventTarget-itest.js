@@ -11,9 +11,13 @@
 import '@react-native/fantom/src/setUpDefaultReactNativeEnvironment';
 
 import createEventTargetHierarchyWithDepth from './createEventTargetHierarchyWithDepth';
-import Event from 'react-native/src/private/webapis/dom/events/Event';
-import EventTarget from 'react-native/src/private/webapis/dom/events/EventTarget';
-import {dispatchTrustedEvent} from 'react-native/src/private/webapis/dom/events/internals/EventTargetInternals';
+import {
+  ReactNativeViewConfigRegistry,
+  dispatchNativeEvent,
+} from 'react-native/react-private-interface';
+
+const NATIVE_CUSTOM_EVENT_TYPE = 'topEventTargetTest';
+const CUSTOM_EVENT_TYPE = 'eventtargettest';
 
 let listenerCallOrder = 0;
 
@@ -54,6 +58,31 @@ function createListener(
 }
 
 describe('EventTarget', () => {
+  beforeAll(() => {
+    ReactNativeViewConfigRegistry.customDirectEventTypes[
+      NATIVE_CUSTOM_EVENT_TYPE
+    ] = {registrationName: 'onEventTargetTest'};
+  });
+
+  afterAll(() => {
+    delete ReactNativeViewConfigRegistry.customDirectEventTypes[
+      NATIVE_CUSTOM_EVENT_TYPE
+    ];
+  });
+
+  it('should have 3 enumerable methods', () => {
+    const methods = new Set([
+      'addEventListener',
+      'removeEventListener',
+      'dispatchEvent',
+    ]);
+    for (const key in new EventTarget()) {
+      expect(methods.has(key)).toBe(true);
+      methods.delete(key);
+    }
+    expect(methods.size).toBe(0);
+  });
+
   describe('addEventListener', () => {
     it('should throw an error if event or callback are NOT passed', () => {
       const eventTarget = new EventTarget();
@@ -248,18 +277,17 @@ describe('EventTarget', () => {
     });
   });
 
-  describe('internal `dispatchTrustedEvent`', () => {
+  describe('internal `dispatchNativeEvent`', () => {
     it('should set the `isTrusted` flag to `true`', () => {
       const eventTarget = new EventTarget();
 
       const listener = createListener();
 
-      eventTarget.addEventListener('custom', listener);
+      eventTarget.addEventListener(CUSTOM_EVENT_TYPE, listener);
 
-      const event = new Event('custom');
+      dispatchNativeEvent(eventTarget, NATIVE_CUSTOM_EVENT_TYPE, {});
 
-      dispatchTrustedEvent(eventTarget, event);
-
+      const event = listener.mock.lastCall[0];
       expect(event.isTrusted).toBe(true);
     });
   });
@@ -308,6 +336,7 @@ describe('EventTarget', () => {
       };
 
       eventTarget.addEventListener('custom', listenerFunction);
+      // $FlowFixMe[incompatible-type] This test intentionally uses an object listener.
       eventTarget.addEventListener('custom', listenerObject);
 
       const event = new Event('custom');
@@ -386,14 +415,11 @@ describe('EventTarget', () => {
 
       const listener = createListener();
 
-      eventTarget.addEventListener('custom', listener);
+      eventTarget.addEventListener(CUSTOM_EVENT_TYPE, listener);
 
-      const event = new Event('custom');
+      dispatchNativeEvent(eventTarget, NATIVE_CUSTOM_EVENT_TYPE, {});
 
-      expect(event.isTrusted).toBe(false);
-
-      dispatchTrustedEvent(eventTarget, event);
-
+      const event = listener.mock.lastCall[0];
       expect(event.isTrusted).toBe(true);
 
       eventTarget.dispatchEvent(event);

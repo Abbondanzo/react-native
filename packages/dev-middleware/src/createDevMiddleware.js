@@ -21,7 +21,7 @@ import openDebuggerMiddleware from './middleware/openDebuggerMiddleware';
 import DefaultToolLauncher from './utils/DefaultToolLauncher';
 import reactNativeDebuggerFrontendPath from '@react-native/debugger-frontend';
 import connect from 'connect';
-import path from 'path';
+import path from 'node:path';
 import serveStaticMiddleware from 'serve-static';
 
 type Options = Readonly<{
@@ -93,6 +93,7 @@ export default function createDevMiddleware({
   unstable_customInspectorMessageHandler,
   unstable_trackInspectorProxyEventLoopPerf = false,
 }: Options): DevMiddlewareAPI {
+  // $FlowFixMe[incompatible-type]
   const normalizedServerBaseUrl: ReadonlyURL = new URL(serverBaseUrl);
 
   const experiments = getExperiments(experimentConfig);

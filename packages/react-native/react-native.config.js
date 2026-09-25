@@ -14,14 +14,15 @@
 import type {Command} from '@react-native-community/cli-types';
  */
 
-// React Native shouldn't be exporting itself like this, the Community Template should be be directly
-// depending on and injecting:
+// IMPORTANT: This is a routing file only. Do NOT add new command
+// definitions or implementations here.
+//
+// CLI commands belong in @react-native/community-cli-plugin, which registers
+// them via its own react-native.config.js.
+//
+// Future state: The Community Template should directly depend on and inject:
 // - @react-native-community/cli-platform-android
 // - @react-native-community/cli-platform-ios
-// - @react-native/community-cli-plugin
-// - codegen command should be inhoused into @react-native-community/cli
-//
-// This is a temporary workaround.
 
 const verbose = Boolean(process.env.DEBUG?.includes('react-native'));
 
@@ -69,48 +70,6 @@ try {
 }
 
 const commands /*: Array<Command> */ = [];
-
-const {
-  bundleCommand,
-  startCommand,
-} = require('@react-native/community-cli-plugin');
-
-commands.push(bundleCommand, startCommand);
-
-const codegenCommand /*: Command */ = {
-  name: 'codegen',
-  options: [
-    {
-      name: '--path <path>',
-      description: 'Path to the React Native project root.',
-      default: process.cwd(),
-    },
-    {
-      name: '--platform <string>',
-      description:
-        'Target platform. Supported values: "android", "ios", "all".',
-      default: 'all',
-    },
-    {
-      name: '--outputPath <path>',
-      description: 'Path where generated artifacts will be output to.',
-    },
-    {
-      name: '--source <string>',
-      description: 'Whether the script is invoked from an `app` or a `library`',
-      default: 'app',
-    },
-  ],
-  func: (argv, config, args) =>
-    require('./scripts/codegen/generate-artifacts-executor').execute(
-      args.path,
-      args.platform,
-      args.outputPath,
-      args.source,
-    ),
-};
-
-commands.push(codegenCommand);
 
 const config = {
   commands,

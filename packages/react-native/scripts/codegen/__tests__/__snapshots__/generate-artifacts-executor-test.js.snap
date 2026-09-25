@@ -426,6 +426,7 @@ header_search_paths = [
 
 if use_frameworks
   ReactNativePodsUtils.create_header_search_path_for_frameworks(\\"PODS_CONFIGURATION_BUILD_DIR\\", \\"React-Fabric\\", \\"React_Fabric\\", [\\"react/renderer/components/view/platform/cxx\\"])
+    .concat(ReactNativePodsUtils.create_header_search_path_for_frameworks(\\"PODS_CONFIGURATION_BUILD_DIR\\", \\"React-bridging\\", \\"React_bridging\\", []))
     .concat(ReactNativePodsUtils.create_header_search_path_for_frameworks(\\"PODS_CONFIGURATION_BUILD_DIR\\", \\"React-FabricImage\\", \\"React_FabricImage\\", []))
     .concat(ReactNativePodsUtils.create_header_search_path_for_frameworks(\\"PODS_CONFIGURATION_BUILD_DIR\\", \\"React-graphics\\", \\"React_graphics\\", [\\"react/renderer/graphics/platform/ios\\"]))
     .concat(ReactNativePodsUtils.create_header_search_path_for_frameworks(\\"PODS_CONFIGURATION_BUILD_DIR\\", \\"ReactCommon\\", \\"ReactCommon\\", [\\"react/nativemodule/core\\"]))
@@ -465,7 +466,7 @@ Pod::Spec.new do |s|
   s.dependency \\"RCTTypeSafety\\"
   s.dependency \\"React-Core\\"
   s.dependency \\"React-jsi\\"
-  s.dependency \\"ReactCommon/turbomodule/bridging\\"
+  s.dependency \\"React-bridging\\"
   s.dependency \\"ReactCommon/turbomodule/core\\"
   s.dependency \\"React-NativeModulesApple\\"
   s.dependency 'React-graphics'
@@ -909,6 +910,7 @@ header_search_paths = [
 
 if use_frameworks
   ReactNativePodsUtils.create_header_search_path_for_frameworks(\\"PODS_CONFIGURATION_BUILD_DIR\\", \\"React-Fabric\\", \\"React_Fabric\\", [\\"react/renderer/components/view/platform/cxx\\"])
+    .concat(ReactNativePodsUtils.create_header_search_path_for_frameworks(\\"PODS_CONFIGURATION_BUILD_DIR\\", \\"React-bridging\\", \\"React_bridging\\", []))
     .concat(ReactNativePodsUtils.create_header_search_path_for_frameworks(\\"PODS_CONFIGURATION_BUILD_DIR\\", \\"React-FabricImage\\", \\"React_FabricImage\\", []))
     .concat(ReactNativePodsUtils.create_header_search_path_for_frameworks(\\"PODS_CONFIGURATION_BUILD_DIR\\", \\"React-graphics\\", \\"React_graphics\\", [\\"react/renderer/graphics/platform/ios\\"]))
     .concat(ReactNativePodsUtils.create_header_search_path_for_frameworks(\\"PODS_CONFIGURATION_BUILD_DIR\\", \\"ReactCommon\\", \\"ReactCommon\\", [\\"react/nativemodule/core\\"]))
@@ -948,7 +950,7 @@ Pod::Spec.new do |s|
   s.dependency \\"RCTTypeSafety\\"
   s.dependency \\"React-Core\\"
   s.dependency \\"React-jsi\\"
-  s.dependency \\"ReactCommon/turbomodule/bridging\\"
+  s.dependency \\"React-bridging\\"
   s.dependency \\"ReactCommon/turbomodule/core\\"
   s.dependency \\"React-NativeModulesApple\\"
   s.dependency 'React-graphics'

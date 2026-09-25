@@ -72,8 +72,7 @@ static const NSTimeInterval kAutoRetryInterval = 20.0;
 - (instancetype)initWithCustomButtonTitles:(NSArray<NSString *> *)customButtonTitles
                       customButtonHandlers:(NSArray<RCTRedBox2ButtonPressHandler> *)customButtonHandlers
 {
-  self = [super init];
-  if (self != nullptr) {
+  if (self = [super init]) {
     _lastErrorCookie = -1;
     _customButtonTitles = customButtonTitles;
     _customButtonHandlers = customButtonHandlers;
@@ -373,6 +372,12 @@ static const NSTimeInterval kAutoRetryInterval = 20.0;
 
 - (void)autoRetryTick
 {
+  // Don't reload while backgrounded: it re-inits TurboModules, and a
+  // requiresMainQueueSetup module dispatch_syncs onto the blocked main queue,
+  // deadlocking until the watchdog kills the app.
+  if (RCTSharedApplication().applicationState != UIApplicationStateActive) {
+    return;
+  }
   _autoRetryCountdown--;
   if (_autoRetryCountdown <= 0) {
     [self stopAutoRetry];

@@ -15,45 +15,15 @@
 #import <react/renderer/components/image/ImageComponentDescriptor.h>
 #import <react/renderer/components/image/ImageEventEmitter.h>
 #import <react/renderer/components/image/ImageProps.h>
+#import <react/renderer/graphics/Color.h>
 #import <react/renderer/imagemanager/ImageRequest.h>
 #import <react/renderer/imagemanager/RCTImagePrimitivesConversions.h>
 
 using namespace facebook::react;
 
-static NSString *const RCTImageRequestPriorityDebugOverlayEnabledEnvironmentVariable =
-    @"RCT_IMAGE_REQUEST_PRIORITY_DEBUG_OVERLAY";
-
-static BOOL RCTImageRequestPriorityDebugOverlayEnabled()
-{
-  if (ReactNativeFeatureFlags::enableImageRequestDowngradingForNonVisibleImages()) {
-    static BOOL enabled = NO;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-      NSDictionary<NSString *, NSString *> *environment = [[NSProcessInfo processInfo] environment];
-      enabled = [environment[RCTImageRequestPriorityDebugOverlayEnabledEnvironmentVariable] boolValue];
-    });
-    return enabled;
-  } else {
-    return NO;
-  }
-}
-
-static NSString *RCTImageRequestPriorityDebugLabel(ImageRequestPriority priority)
-{
-  switch (priority) {
-    case ImageRequestPriority::Immediate:
-      return @"immediate";
-    case ImageRequestPriority::Prefetch:
-      return @"offscreen";
-    default:
-      return @"unknown";
-  }
-}
-
 @implementation RCTImageComponentView {
   ImageShadowNode::ConcreteState::Shared _state;
   std::shared_ptr<RCTImageResponseObserverProxy> _imageResponseObserverProxy;
-  UILabel *_requestPriorityLabel;
 }
 
 - (instancetype)initWithFrame:(CGRect)frame
@@ -67,8 +37,6 @@ static NSString *RCTImageRequestPriorityDebugLabel(ImageRequestPriority priority
     _imageView.contentMode = RCTContentModeFromImageResizeMode(defaultProps->resizeMode);
     _imageView.layer.minificationFilter = kCAFilterTrilinear;
     _imageView.layer.magnificationFilter = kCAFilterTrilinear;
-
-    _imageResponseObserverProxy = std::make_shared<RCTImageResponseObserverProxy>(self);
 
     self.contentView = _imageView;
   }
@@ -95,7 +63,15 @@ static NSString *RCTImageRequestPriorityDebugLabel(ImageRequestPriority priority
 
   // `tintColor`
   if (oldImageProps.tintColor != newImageProps.tintColor) {
-    _imageView.tintColor = RCTUIColorFromSharedColor(newImageProps.tintColor);
+    if (ReactNativeFeatureFlags::enableImageTransparentTintColor()) {
+      if (newImageProps.tintColor.has_value()) {
+        _imageView.tintColor = RCTUIColorFromSharedColor(newImageProps.tintColor.value());
+      } else {
+        _imageView.tintColor = nil;
+      }
+    } else {
+      _imageView.tintColor = RCTUIColorFromSharedColor(newImageProps.tintColor.value_or(SharedColor{}));
+    }
   }
 
   [super updateProps:props oldProps:oldProps];
@@ -116,20 +92,23 @@ static NSString *RCTImageRequestPriorityDebugLabel(ImageRequestPriority priority
   auto oldImageState = std::static_pointer_cast<const ImageShadowNode::ConcreteState>(_state);
   auto newImageState = std::static_pointer_cast<const ImageShadowNode::ConcreteState>(state);
 
-  [self _setStateAndResubscribeImageResponseObserver:newImageState];
-  [self _updateRequestPriorityLabelWithState:newImageState];
-
   bool havePreviousData = oldImageState && oldImageState->getData().getImageSource() != ImageSource{};
 
   if (!havePreviousData ||
       (newImageState && newImageState->getData().getImageSource() != oldImageState->getData().getImageSource())) {
     // Loading actually starts a little before this, but this is the first time we know
-    // the image is loading and can fire an event from this component
+    // the image is loading and can fire an event from this component.
+    //
+    // This has to be emitted before subscribing below: the observer coordinator
+    // replays an already-`Completed` (or `Failed`) response synchronously, so
+    // subscribing first can deliver `onLoad`/`onLoadEnd` ahead of `onLoadStart`.
     static_cast<const ImageEventEmitter &>(*_eventEmitter).onLoadStart();
 
     // TODO (T58941612): Tracking for visibility should be done directly on this class.
     // For now, we consolidate instrumentation logic in the image loader, so that pre-Fabric gets the same treatment.
   }
+
+  [self _setStateAndResubscribeImageResponseObserver:newImageState];
 }
 
 - (void)_setStateAndResubscribeImageResponseObserver:(const ImageShadowNode::ConcreteState::Shared &)state
@@ -143,58 +122,20 @@ static NSString *RCTImageRequestPriorityDebugLabel(ImageRequestPriority priority
   _state = state;
 
   if (_state) {
+    // A new observer per subscription: callbacks of a previous request can still be queued on the
+    // main queue (e.g. after this view was recycled and reused), and must not be applied here.
+    // The callbacks are matched by the proxy's address. The new proxy is allocated before the
+    // previous one is released, so two consecutive subscriptions never share an address.
+    _imageResponseObserverProxy = std::make_shared<RCTImageResponseObserverProxy>(self);
     auto &observerCoordinator = _state->getData().getImageRequest().getObserverCoordinator();
     observerCoordinator.addObserver(_imageResponseObserverProxy);
   }
-}
-
-- (UILabel *)_requestPriorityLabel
-{
-  if (!_requestPriorityLabel) {
-    _requestPriorityLabel = [UILabel new];
-    _requestPriorityLabel.accessibilityElementsHidden = YES;
-    _requestPriorityLabel.backgroundColor = [UIColor colorWithWhite:0 alpha:0.65];
-    _requestPriorityLabel.clipsToBounds = YES;
-    _requestPriorityLabel.font = [UIFont systemFontOfSize:10 weight:UIFontWeightSemibold];
-    _requestPriorityLabel.hidden = YES;
-    _requestPriorityLabel.isAccessibilityElement = NO;
-    _requestPriorityLabel.layer.cornerRadius = 3;
-    _requestPriorityLabel.textAlignment = NSTextAlignmentCenter;
-    _requestPriorityLabel.textColor = UIColor.whiteColor;
-    [_imageView addSubview:_requestPriorityLabel];
-  }
-
-  return _requestPriorityLabel;
-}
-
-- (void)_updateRequestPriorityLabelWithState:(const ImageShadowNode::ConcreteState::Shared &)state
-{
-  if (!state || !RCTImageRequestPriorityDebugOverlayEnabled()) {
-    if (_requestPriorityLabel) {
-      _requestPriorityLabel.hidden = YES;
-      _requestPriorityLabel.text = nil;
-    }
-    return;
-  }
-
-  UILabel *requestPriorityLabel = [self _requestPriorityLabel];
-  requestPriorityLabel.text = RCTImageRequestPriorityDebugLabel(state->getData().getImageRequestParams().priority);
-  [requestPriorityLabel sizeToFit];
-
-  CGRect frame = requestPriorityLabel.frame;
-  frame.origin = CGPointMake(2, 2);
-  frame.size.width += 8;
-  frame.size.height += 4;
-  requestPriorityLabel.frame = frame;
-  requestPriorityLabel.hidden = NO;
-  [_imageView bringSubviewToFront:requestPriorityLabel];
 }
 
 - (void)prepareForRecycle
 {
   [super prepareForRecycle];
   [self _setStateAndResubscribeImageResponseObserver:nullptr];
-  [self _updateRequestPriorityLabelWithState:nullptr];
   _imageView.image = nil;
 }
 
@@ -202,8 +143,9 @@ static NSString *RCTImageRequestPriorityDebugLabel(ImageRequestPriority priority
 
 - (void)didReceiveImage:(UIImage *)image metadata:(id)metadata fromObserver:(const void *)observer
 {
-  if (!_eventEmitter || !_state) {
-    // Notifications are delivered asynchronously and might arrive after the view is already recycled.
+  if (!_eventEmitter || !_state || observer != _imageResponseObserverProxy.get()) {
+    // Notifications are delivered asynchronously and might arrive after the view is already recycled,
+    // or after it has been reused for another image.
     // In the future, we should incorporate an `EventEmitter` into a separate object owned by `ImageRequest` or `State`.
     // See for more info: T46311063.
     return;
@@ -249,7 +191,7 @@ static NSString *RCTImageRequestPriorityDebugLabel(ImageRequestPriority priority
                      total:(int64_t)total
               fromObserver:(const void *)observer
 {
-  if (!_eventEmitter) {
+  if (!_eventEmitter || observer != _imageResponseObserverProxy.get()) {
     return;
   }
 
@@ -258,6 +200,10 @@ static NSString *RCTImageRequestPriorityDebugLabel(ImageRequestPriority priority
 
 - (void)didReceiveFailure:(NSError *)error fromObserver:(const void *)observer
 {
+  if (observer != _imageResponseObserverProxy.get()) {
+    return;
+  }
+
   _imageView.image = nil;
 
   if (!_eventEmitter) {

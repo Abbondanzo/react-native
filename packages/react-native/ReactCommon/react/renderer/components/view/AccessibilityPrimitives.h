@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include <react/cxxstableapi/UmbrellaGuard.h>
+
 #include <cinttypes>
 #include <optional>
 #include <string>
@@ -58,7 +60,7 @@ inline static bool operator==(const AccessibilityAction &lhs, const Accessibilit
 
 struct AccessibilityState {
   bool disabled{false};
-  bool selected{false};
+  std::optional<bool> selected{std::nullopt};
   bool busy{false};
   std::optional<bool> expanded{std::nullopt};
   enum CheckedState { Unchecked, Checked, Mixed, None };

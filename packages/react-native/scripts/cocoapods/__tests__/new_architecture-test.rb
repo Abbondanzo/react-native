@@ -23,6 +23,7 @@ class NewArchitectureTests < Test::Unit::TestCase
         Pod::UI.reset()
         FileMock.reset()
         ENV["RCT_NEW_ARCH_ENABLED"] = nil
+        ENV["USE_FRAMEWORKS"] = nil
         NewArchitectureHelper.reset()
     end
 
@@ -152,7 +153,7 @@ class NewArchitectureTests < Test::Unit::TestCase
                 { :dependency_name => "ReactCodegen" },
                 { :dependency_name => "RCTRequired" },
                 { :dependency_name => "RCTTypeSafety" },
-                { :dependency_name => "ReactCommon/turbomodule/bridging" },
+                { :dependency_name => "React-bridging" },
                 { :dependency_name => "ReactCommon/turbomodule/core" },
                 { :dependency_name => "React-NativeModulesApple" },
                 { :dependency_name => "Yoga" },
@@ -165,6 +166,7 @@ class NewArchitectureTests < Test::Unit::TestCase
                 { :dependency_name => "React-rendererdebug" },
                 { :dependency_name => "React-jsi" },
                 { :dependency_name => "React-renderercss" },
+                { :dependency_name => "React-cxxstableapi" },
                 { :dependency_name => "hermes-engine" },
                 { :dependency_name => "glog" },
                 { :dependency_name => "boost" },
@@ -177,6 +179,16 @@ class NewArchitectureTests < Test::Unit::TestCase
             ],
             spec.dependencies
         )
+    end
+
+    def test_installModulesDependencies_whenUseFrameworks_addsReactBridgingSearchPath
+        spec = SpecMock.new
+        ENV["USE_FRAMEWORKS"] = "dynamic"
+
+        NewArchitectureHelper.install_modules_dependencies(spec, true, '2024.10.14.00')
+
+        header_search_paths = Array(spec.pod_target_xcconfig["HEADER_SEARCH_PATHS"]).join(" ")
+        assert(header_search_paths.include?("${PODS_CONFIGURATION_BUILD_DIR}/React-bridging/React_bridging.framework/Headers"))
     end
 
     def test_installModulesDependencies_whenNewArchDisabledAndSearchPathsAndCompilerFlagsArePresent_itInstallDependenciesAndPreserveOtherSettings
@@ -203,7 +215,7 @@ class NewArchitectureTests < Test::Unit::TestCase
                 { :dependency_name => "ReactCodegen" },
                 { :dependency_name => "RCTRequired" },
                 { :dependency_name => "RCTTypeSafety" },
-                { :dependency_name => "ReactCommon/turbomodule/bridging" },
+                { :dependency_name => "React-bridging" },
                 { :dependency_name => "ReactCommon/turbomodule/core" },
                 { :dependency_name => "React-NativeModulesApple" },
                 { :dependency_name => "Yoga" },
@@ -216,6 +228,7 @@ class NewArchitectureTests < Test::Unit::TestCase
                 { :dependency_name => "React-rendererdebug" },
                 { :dependency_name => "React-jsi" },
                 { :dependency_name => "React-renderercss" },
+                { :dependency_name => "React-cxxstableapi" },
                 { :dependency_name => "hermes-engine" },
                 { :dependency_name => "glog" },
                 { :dependency_name => "boost" },

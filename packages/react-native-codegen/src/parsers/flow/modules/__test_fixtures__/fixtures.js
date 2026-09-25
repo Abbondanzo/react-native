@@ -234,11 +234,11 @@ const NATIVE_MODULE_WITH_FLOAT_AND_INT32 = `
 
 import type {TurboModule} from '../RCTExport';
 import * as TurboModuleRegistry from '../TurboModuleRegistry';
-import type {Int32, Float} from 'react-native/Libraries/Types/CodegenTypes';
+import type {CodegenTypes} from 'react-native';
 
 export interface Spec extends TurboModule {
-  +getInt: (arg: Int32) => Int32;
-  +getFloat: (arg: Float) => Float;
+  +getInt: (arg: CodegenTypes.Int32) => CodegenTypes.Int32;
+  +getFloat: (arg: CodegenTypes.Float) => CodegenTypes.Float;
 }
 
 export default TurboModuleRegistry.getEnforcing<Spec>('SampleTurboModule');
@@ -283,10 +283,12 @@ const NATIVE_MODULE_WITH_UNSAFE_OBJECT = `
 
 import type {TurboModule} from '../RCTExport';
 import * as TurboModuleRegistry from '../TurboModuleRegistry';
-import type {UnsafeObject} from 'react-native/Libraries/Types/CodegenTypes';
+import type {CodegenTypes} from 'react-native';
 
 export interface Spec extends TurboModule {
-  +getUnsafeObject: (o: UnsafeObject) => UnsafeObject,
+  +getUnsafeObject: (
+    o: CodegenTypes.UnsafeObject,
+  ) => CodegenTypes.UnsafeObject,
 }
 
 export default TurboModuleRegistry.getEnforcing<Spec>('SampleTurboModule');
@@ -667,7 +669,7 @@ const NATIVE_MODULE_WITH_EVENT_EMITTERS = `
 'use strict';
 
 import type {TurboModule} from '../RCTExport';
-import type {EventEmitter} from '../CodegenTypes';
+import type {Double, EventEmitter, Float, Int32} from '../CodegenTypes';
 import * as TurboModuleRegistry from '../TurboModuleRegistry';
 
 export type ObjectStruct = {
@@ -686,6 +688,9 @@ export interface Spec extends TurboModule {
   +onEvent5: EventEmitter<ObjectStruct>;
   +onEvent6: EventEmitter<ObjectStruct[]>;
   +onEvent7: EventEmitter<MappedObject>;
+  +onEvent8: EventEmitter<Double>;
+  +onEvent9: EventEmitter<Float>;
+  +onEvent10: EventEmitter<Int32>;
 }
 
 export default TurboModuleRegistry.getEnforcing<Spec>('SampleTurboModule');
@@ -946,6 +951,34 @@ export default TurboModuleRegistry.getEnforcing<Spec>('SampleTurboModule');
 
 `;
 
+const NAMESPACED_NATIVE_MODULE_WITH_LOCAL_TYPE_ALIASES = `
+/**
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ * @flow strict-local
+ * @format
+ */
+
+'use strict';
+
+import type {TurboModule} from '../RCTExport';
+import * as TurboModuleRegistry from '../TurboModuleRegistry';
+import type {CodegenTypes} from 'react-native';
+
+type Double = CodegenTypes.Double;
+type MyFloat = CodegenTypes.Float;
+
+export interface Spec extends TurboModule {
+  +getDouble: (arg: Double) => Double;
+  +getFloat: (arg: MyFloat) => MyFloat;
+}
+
+export default TurboModuleRegistry.getEnforcing<Spec>('SampleTurboModule');
+`;
+
 const NAMESPACED_NATIVE_MODULE_WITH_EVENT_EMITTERS = `
 /**
  * Copyright (c) Meta Platforms, Inc. and affiliates.
@@ -1046,4 +1079,5 @@ module.exports = {
   NAMESPACED_NATIVE_MODULE_WITH_FLOAT_AND_INT32,
   NAMESPACED_NATIVE_MODULE_WITH_UNSAFE_OBJECT,
   NAMESPACED_NATIVE_MODULE_WITH_EVENT_EMITTERS,
+  NAMESPACED_NATIVE_MODULE_WITH_LOCAL_TYPE_ALIASES,
 };

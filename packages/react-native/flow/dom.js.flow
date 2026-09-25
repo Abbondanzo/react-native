@@ -172,68 +172,52 @@ type EventHandler = (event: Event) => unknown;
 type EventListener = {handleEvent: EventHandler, ...} | EventHandler;
 type MouseEventHandler = (event: MouseEvent) => unknown;
 type MouseEventListener =
-  | {handleEvent: MouseEventHandler, ...}
-  | MouseEventHandler;
+  {handleEvent: MouseEventHandler, ...} | MouseEventHandler;
 type FocusEventHandler = (event: FocusEvent) => unknown;
 type FocusEventListener =
-  | {handleEvent: FocusEventHandler, ...}
-  | FocusEventHandler;
+  {handleEvent: FocusEventHandler, ...} | FocusEventHandler;
 type KeyboardEventHandler = (event: KeyboardEvent) => unknown;
 type KeyboardEventListener =
-  | {handleEvent: KeyboardEventHandler, ...}
-  | KeyboardEventHandler;
+  {handleEvent: KeyboardEventHandler, ...} | KeyboardEventHandler;
 type InputEventHandler = (event: InputEvent) => unknown;
 type InputEventListener =
-  | {handleEvent: InputEventHandler, ...}
-  | InputEventHandler;
+  {handleEvent: InputEventHandler, ...} | InputEventHandler;
 type TouchEventHandler = (event: TouchEvent) => unknown;
 type TouchEventListener =
-  | {handleEvent: TouchEventHandler, ...}
-  | TouchEventHandler;
+  {handleEvent: TouchEventHandler, ...} | TouchEventHandler;
 type WheelEventHandler = (event: WheelEvent) => unknown;
 type WheelEventListener =
-  | {handleEvent: WheelEventHandler, ...}
-  | WheelEventHandler;
+  {handleEvent: WheelEventHandler, ...} | WheelEventHandler;
 type AbortProgressEventHandler = (event: ProgressEvent) => unknown;
 type AbortProgressEventListener =
-  | {handleEvent: AbortProgressEventHandler, ...}
-  | AbortProgressEventHandler;
+  {handleEvent: AbortProgressEventHandler, ...} | AbortProgressEventHandler;
 type ProgressEventHandler = (event: ProgressEvent) => unknown;
 type ProgressEventListener =
-  | {handleEvent: ProgressEventHandler, ...}
-  | ProgressEventHandler;
+  {handleEvent: ProgressEventHandler, ...} | ProgressEventHandler;
 type DragEventHandler = (event: DragEvent) => unknown;
 type DragEventListener =
-  | {handleEvent: DragEventHandler, ...}
-  | DragEventHandler;
+  {handleEvent: DragEventHandler, ...} | DragEventHandler;
 type PointerEventHandler = (event: PointerEvent) => unknown;
 type PointerEventListener =
-  | {handleEvent: PointerEventHandler, ...}
-  | PointerEventHandler;
+  {handleEvent: PointerEventHandler, ...} | PointerEventHandler;
 type AnimationEventHandler = (event: AnimationEvent) => unknown;
 type AnimationEventListener =
-  | {handleEvent: AnimationEventHandler, ...}
-  | AnimationEventHandler;
+  {handleEvent: AnimationEventHandler, ...} | AnimationEventHandler;
 type ClipboardEventHandler = (event: ClipboardEvent) => unknown;
 type ClipboardEventListener =
-  | {handleEvent: ClipboardEventHandler, ...}
-  | ClipboardEventHandler;
+  {handleEvent: ClipboardEventHandler, ...} | ClipboardEventHandler;
 type TransitionEventHandler = (event: TransitionEvent) => unknown;
 type TransitionEventListener =
-  | {handleEvent: TransitionEventHandler, ...}
-  | TransitionEventHandler;
+  {handleEvent: TransitionEventHandler, ...} | TransitionEventHandler;
 type MessageEventHandler = (event: MessageEvent) => unknown;
 type MessageEventListener =
-  | {handleEvent: MessageEventHandler, ...}
-  | MessageEventHandler;
+  {handleEvent: MessageEventHandler, ...} | MessageEventHandler;
 type BeforeUnloadEventHandler = (event: BeforeUnloadEvent) => unknown;
 type BeforeUnloadEventListener =
-  | {handleEvent: BeforeUnloadEventHandler, ...}
-  | BeforeUnloadEventHandler;
+  {handleEvent: BeforeUnloadEventHandler, ...} | BeforeUnloadEventHandler;
 type StorageEventHandler = (event: StorageEvent) => unknown;
 type StorageEventListener =
-  | {handleEvent: StorageEventHandler, ...}
-  | StorageEventHandler;
+  {handleEvent: StorageEventHandler, ...} | StorageEventHandler;
 type SecurityPolicyViolationEventHandler = (
   event: SecurityPolicyViolationEvent,
 ) => unknown;
@@ -242,8 +226,7 @@ type SecurityPolicyViolationEventListener =
   | SecurityPolicyViolationEventHandler;
 type USBConnectionEventHandler = (event: USBConnectionEvent) => unknown;
 type USBConnectionEventListener =
-  | {handleEvent: USBConnectionEventHandler, ...}
-  | USBConnectionEventHandler;
+  {handleEvent: USBConnectionEventHandler, ...} | USBConnectionEventHandler;
 
 type MediaKeySessionType = 'temporary' | 'persistent-license';
 type MediaKeyStatus =
@@ -272,13 +255,7 @@ type TouchEventTypes = 'touchstart' | 'touchmove' | 'touchend' | 'touchcancel';
 type WheelEventTypes = 'wheel';
 type AbortProgressEventTypes = 'abort';
 type ProgressEventTypes =
-  | 'abort'
-  | 'error'
-  | 'load'
-  | 'loadend'
-  | 'loadstart'
-  | 'progress'
-  | 'timeout';
+  'abort' | 'error' | 'load' | 'loadend' | 'loadstart' | 'progress' | 'timeout';
 type DragEventTypes =
   | 'drag'
   | 'dragend'
@@ -300,15 +277,10 @@ type PointerEventTypes =
   | 'gotpointercapture'
   | 'lostpointercapture';
 type AnimationEventTypes =
-  | 'animationstart'
-  | 'animationend'
-  | 'animationiteration';
+  'animationstart' | 'animationend' | 'animationiteration';
 type ClipboardEventTypes = 'clipboardchange' | 'cut' | 'copy' | 'paste';
 type TransitionEventTypes =
-  | 'transitionrun'
-  | 'transitionstart'
-  | 'transitionend'
-  | 'transitioncancel';
+  'transitionrun' | 'transitionstart' | 'transitionend' | 'transitioncancel';
 type MessageEventTypes = string;
 type BeforeUnloadEventTypes = 'beforeunload';
 type StorageEventTypes = 'storage';
@@ -644,9 +616,11 @@ type Event$Init = {
   ...
 };
 
+type EventInit = Event$Init;
+
 // https://dom.spec.whatwg.org/#interface-event
 declare class Event {
-  constructor(type: string, eventInitDict?: Event$Init): void;
+  constructor(type: string, eventInitDict?: ?Event$Init): void;
   /**
    * Returns the type of event, e.g. "click", "hashchange", or "submit".
    */
@@ -739,10 +713,17 @@ declare class Event {
   /** Non-standard. See Event.prototype.composed */
   readonly scoped: boolean;
 
+  cancelBubble: boolean;
+
   /**
    * @deprecated
    */
   initEvent(type: string, bubbles: boolean, cancelable: boolean): void;
+
+  static readonly NONE: 0;
+  static readonly CAPTURING_PHASE: 1;
+  static readonly AT_TARGET: 2;
+  static readonly BUBBLING_PHASE: 3;
 }
 
 type CustomEvent$Init = {...Event$Init, detail?: any, ...};
@@ -1279,7 +1260,7 @@ declare class SecurityPolicyViolationEvent extends Event {
 
 // https://developer.mozilla.org/en-US/docs/Web/API/USBConnectionEvent
 declare class USBConnectionEvent extends Event {
-  device: USBDevice;
+  device: unknown;
 }
 
 // TODO: *Event
@@ -1340,7 +1321,7 @@ declare class Node extends EventTarget {
   outerText?: string;
 }
 
-declare class NodeList<T> {
+declare class NodeList<T = Node> {
   @@iterator(): Iterator<T>;
   length: number;
   item(index: number): T;
@@ -1354,6 +1335,8 @@ declare class NodeList<T> {
   keys(): Iterator<number>;
   values(): Iterator<T>;
 }
+
+type NodeListOf<T extends Node> = NodeList<T>;
 
 declare class NamedNodeMap {
   @@iterator(): Iterator<Attr>;
@@ -4982,6 +4965,12 @@ declare class WebGLContextEvent extends Event {
 // http://www.w3.org/TR/html5/scripting-1.html#renderingcontext
 type RenderingContext = CanvasRenderingContext2D | WebGLRenderingContext;
 
+type CanvasCaptureMediaStream = MediaStream & {
+  canvas: HTMLCanvasElement,
+  requestFrame(): void,
+  ...
+};
+
 // https://www.w3.org/TR/html5/scripting-1.html#htmlcanvaselement
 declare class HTMLCanvasElement extends HTMLElement {
   tagName: 'CANVAS';
@@ -6051,8 +6040,7 @@ type NodeFilterCallback = (
   | typeof NodeFilter.FILTER_SKIP;
 
 type NodeFilterInterface =
-  | NodeFilterCallback
-  | {acceptNode: NodeFilterCallback, ...};
+  NodeFilterCallback | {acceptNode: NodeFilterCallback, ...};
 
 // TODO: window.NodeFilter exists at runtime and behaves as a constructor
 //       as far as `instanceof` is concerned, but it is not callable.
@@ -6118,12 +6106,10 @@ declare function getComputedStyle(
   elt: Element,
   pseudoElt?: string,
 ): CSSStyleDeclaration;
-declare opaque type AnimationFrameID;
 declare function requestAnimationFrame(
   callback: (timestamp: number) => void,
-): AnimationFrameID;
-declare function cancelAnimationFrame(requestId: AnimationFrameID): void;
-declare opaque type IdleCallbackID;
+): number;
+declare function cancelAnimationFrame(requestId: number): void;
 declare function requestIdleCallback(
   cb: (deadline: {
     didTimeout: boolean,
@@ -6131,8 +6117,8 @@ declare function requestIdleCallback(
     ...
   }) => void,
   opts?: {timeout: number, ...},
-): IdleCallbackID;
-declare function cancelIdleCallback(id: IdleCallbackID): void;
+): number;
+declare function cancelIdleCallback(id: number): void;
 declare var localStorage: Storage;
 declare var devicePixelRatio: number;
 declare function focus(): void;

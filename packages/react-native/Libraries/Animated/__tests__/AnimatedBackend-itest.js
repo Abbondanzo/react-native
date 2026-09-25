@@ -13,12 +13,69 @@ import '@react-native/fantom/src/setUpDefaultReactNativeEnvironment';
 
 import type {HostInstance} from 'react-native';
 
-import ensureInstance from '../../../src/private/__tests__/utilities/ensureInstance';
 import * as Fantom from '@react-native/fantom';
-import {createRef, memo, useEffect, useMemo, useState} from 'react';
+import nullthrows from 'nullthrows';
+import * as React from 'react';
+import {Component, createRef, memo, useEffect, useMemo, useState} from 'react';
 import {Animated, View, useAnimatedValue} from 'react-native';
-import {allowStyleProp} from 'react-native/Libraries/Animated/NativeAnimatedAllowlist';
-import ReactNativeElement from 'react-native/src/private/webapis/dom/nodes/ReactNativeElement';
+
+// marginLeft (and the other margin props) are only on the native animated
+// allowlist when the shared backend is enabled. This verifies the prop is
+// supported natively out of the box under useSharedAnimatedBackend.
+test('animate marginLeft layout prop', () => {
+  const viewRef = createRef<HostInstance>();
+
+  let _animatedMarginLeft;
+  let _marginLeftAnimation;
+
+  function MyApp() {
+    const animatedMarginLeft = useAnimatedValue(0);
+    _animatedMarginLeft = animatedMarginLeft;
+    return (
+      <Animated.View
+        ref={viewRef}
+        style={[
+          {
+            width: 100,
+            height: 100,
+            marginLeft: animatedMarginLeft,
+          },
+        ]}
+      />
+    );
+  }
+
+  const root = Fantom.createRoot();
+
+  Fantom.runTask(() => {
+    root.render(<MyApp />);
+  });
+
+  Fantom.runTask(() => {
+    _marginLeftAnimation = Animated.timing(_animatedMarginLeft, {
+      toValue: 100,
+      duration: 200,
+      useNativeDriver: true,
+    }).start();
+  });
+
+  Fantom.unstable_produceFramesForDuration(100);
+
+  expect(root.getRenderedOutput({props: ['marginLeft']}).toJSX()).toEqual(
+    <rn-view marginLeft="50" />,
+  );
+
+  Fantom.unstable_produceFramesForDuration(100);
+
+  // TODO: this shouldn't be necessary since animation should be stopped after duration
+  Fantom.runTask(() => {
+    _marginLeftAnimation?.stop();
+  });
+
+  expect(root.getRenderedOutput({props: ['marginLeft']}).toJSX()).toEqual(
+    <rn-view marginLeft="100" />,
+  );
+});
 
 test('animated opacity', () => {
   let _opacity;
@@ -48,7 +105,7 @@ test('animated opacity', () => {
     root.render(<MyApp />);
   });
 
-  const viewElement = ensureInstance(viewRef.current, ReactNativeElement);
+  const viewElement = nullthrows(viewRef.current);
 
   expect(viewElement.getBoundingClientRect().x).toBe(0);
 
@@ -75,9 +132,124 @@ test('animated opacity', () => {
   );
 });
 
+// ScrollView's ref is the host instance, so it resolves directly (sanity check
+// that the fix doesn't regress it).
+test('animated opacity on Animated.ScrollView', () => {
+  let _opacity;
+  let _opacityAnimation;
+
+  function MyApp() {
+    const opacity = useAnimatedValue(1);
+    _opacity = opacity;
+    return (
+      <Animated.ScrollView style={{opacity}}>
+        <View style={{width: 100, height: 100}} />
+      </Animated.ScrollView>
+    );
+  }
+
+  const root = Fantom.createRoot();
+  Fantom.runTask(() => {
+    root.render(<MyApp />);
+  });
+
+  Fantom.runTask(() => {
+    _opacityAnimation = Animated.timing(_opacity, {
+      toValue: 0,
+      duration: 30,
+      useNativeDriver: true,
+    }).start();
+  });
+  Fantom.unstable_produceFramesForDuration(30);
+  Fantom.runTask(() => {
+    _opacityAnimation?.stop();
+  });
+
+  expect(
+    JSON.stringify(root.getRenderedOutput({props: ['opacity']}).toJSON()),
+  ).toContain('"opacity":"0"');
+});
+
+test('animated opacity on Animated.FlatList', () => {
+  let _opacity;
+  let _opacityAnimation;
+
+  function MyApp() {
+    const opacity = useAnimatedValue(1);
+    _opacity = opacity;
+    return (
+      <Animated.FlatList
+        data={[] as Array<string>}
+        renderItem={() => null}
+        style={{opacity}}
+      />
+    );
+  }
+
+  const root = Fantom.createRoot();
+  Fantom.runTask(() => {
+    root.render(<MyApp />);
+  });
+
+  Fantom.runTask(() => {
+    _opacityAnimation = Animated.timing(_opacity, {
+      toValue: 0,
+      duration: 30,
+      useNativeDriver: true,
+    }).start();
+  });
+  Fantom.unstable_produceFramesForDuration(30);
+  Fantom.runTask(() => {
+    _opacityAnimation?.stop();
+  });
+
+  expect(
+    JSON.stringify(root.getRenderedOutput({props: ['opacity']}).toJSON()),
+  ).toContain('"opacity":"0"');
+});
+
+// A class composite uses the findShadowNodeByTag fallback path in #connectShadowNode.
+test('animated opacity on a class composite wrapping a host', () => {
+  let _opacity;
+  let _opacityAnimation;
+
+  class HostWrapper extends Component<{style?: $FlowFixMe}> {
+    render(): React.Node {
+      return <View style={this.props.style} />;
+    }
+  }
+  const AnimatedHostWrapper = Animated.createAnimatedComponent(HostWrapper);
+
+  function MyApp() {
+    const opacity = useAnimatedValue(1);
+    _opacity = opacity;
+    return <AnimatedHostWrapper style={{width: 100, height: 100, opacity}} />;
+  }
+
+  const root = Fantom.createRoot();
+  Fantom.runTask(() => {
+    root.render(<MyApp />);
+  });
+
+  Fantom.runTask(() => {
+    _opacityAnimation = Animated.timing(_opacity, {
+      toValue: 0,
+      duration: 30,
+      useNativeDriver: true,
+    }).start();
+  });
+  Fantom.unstable_produceFramesForDuration(30);
+  Fantom.runTask(() => {
+    _opacityAnimation?.stop();
+  });
+
+  expect(root.getRenderedOutput({props: ['opacity']}).toJSX()).toEqual(
+    <rn-view opacity="0" />,
+  );
+});
+
 test('animate layout props', () => {
   const viewRef = createRef<HostInstance>();
-  allowStyleProp('height');
 
   let _animatedHeight;
   let _heightAnimation;
@@ -134,7 +306,6 @@ test('animate layout props', () => {
 
 test('animate layout props and rerender', () => {
   const viewRef = createRef<HostInstance>();
-  allowStyleProp('height');
 
   let _animatedHeight;
   let _heightAnimation;
@@ -238,7 +409,7 @@ test('animate non-layout props and rerender', () => {
     root.render(<MyApp />);
   });
 
-  const viewElement = ensureInstance(viewRef.current, ReactNativeElement);
+  const viewElement = nullthrows(viewRef.current);
 
   Fantom.runTask(() => {
     _opacityAnimation = Animated.timing(_animatedOpacity, {
@@ -306,7 +477,6 @@ test('animate non-layout props and rerender', () => {
 
 test('animate layout props and rerender in many components', () => {
   const viewRef = createRef<HostInstance>();
-  allowStyleProp('height');
 
   let _animatedHeight;
   let _heightAnimation;
@@ -402,8 +572,6 @@ test('animate layout props and rerender in many components', () => {
 
 test('animate width, height and opacity at once', () => {
   const viewRef = createRef<HostInstance>();
-  allowStyleProp('width');
-  allowStyleProp('height');
 
   let _animatedWidth;
   let _animatedHeight;
@@ -471,7 +639,6 @@ test('animate width, height and opacity at once', () => {
 
 test('animate width with memo and rerender (js sync test)', () => {
   const viewRef = createRef<HostInstance>();
-  allowStyleProp('width');
 
   let _widthAnimation;
   let _setState;

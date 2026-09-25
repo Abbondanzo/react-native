@@ -42,9 +42,11 @@ Pod::Spec.new do |s|
   s.dependency "React-logger"
   s.dependency "React-Core"
   s.dependency "React-debug"
+  s.dependency "React-cxxstableapi"
   s.dependency "React-featureflags"
   s.dependency "React-runtimescheduler"
   s.dependency "React-cxxreact"
+  s.dependency "React-bridging"
 
   add_dependency(s, "React-runtimeexecutor", :additional_framework_paths => ["platform/ios"])
   add_dependency(s, "React-rendererdebug")
@@ -102,20 +104,34 @@ Pod::Spec.new do |s|
         "\"$(PODS_TARGET_SRCROOT)/react/renderer/components/text/platform/cxx\"",
         "\"$(PODS_TARGET_SRCROOT)/react/renderer/components/textinput/platform/ios\"",
         "\"$(PODS_TARGET_SRCROOT)/react/renderer/components/view/platform/cxx\"",
+        "\"$(PODS_TARGET_SRCROOT)/react/renderer/core\"",
+        "\"$(PODS_TARGET_SRCROOT)/react/renderer/debug\"",
       ]
     end
 
     ss.source_files         = podspec_sources("react/renderer/core/**/*.{m,mm,cpp,h}", "react/renderer/core/**/*.{h}")
-    ss.exclude_files        = "react/renderer/core/tests"
+    ss.exclude_files        = ["react/renderer/core/tests", "react/renderer/core/React"]
     ss.header_dir           = "react/renderer/core"
     ss.pod_target_xcconfig  = {
       "HEADER_SEARCH_PATHS" => header_search_path.join(" ")
     }
   end
 
+  s.subspec "coreUmbrella" do |ss|
+    ss.source_files         = "react/renderer/core/React/*.h"
+    ss.header_dir           = ""
+    ss.header_mappings_dir  = "react/renderer/core"
+  end
+
   s.subspec "componentregistry" do |ss|
     ss.source_files         = podspec_sources("react/renderer/componentregistry/*.{m,mm,cpp,h}", "react/renderer/componentregistry/*.{h}")
     ss.header_dir           = "react/renderer/componentregistry"
+  end
+
+  s.subspec "componentregistryUmbrella" do |ss|
+    ss.source_files         = "react/renderer/componentregistry/React/*.h"
+    ss.header_dir           = ""
+    ss.header_mappings_dir  = "react/renderer/componentregistry"
   end
 
   s.subspec "componentregistrynative" do |ss|
@@ -135,6 +151,12 @@ Pod::Spec.new do |s|
       sss.dependency             "Yoga"
       sss.source_files         = podspec_sources(["react/renderer/components/view/*.{m,mm,cpp,h}", "react/renderer/components/view/platform/cxx/**/*.{m,mm,cpp,h}"], ["react/renderer/components/view/*.{h}", "react/renderer/components/view/platform/cxx/**/*.{h}"])
       sss.header_dir           = "react/renderer/components/view"
+    end
+
+    ss.subspec "viewUmbrella" do |sss|
+      sss.source_files         = "react/renderer/components/view/React/*.h"
+      sss.header_dir           = ""
+      sss.header_mappings_dir  = "react/renderer/components/view"
     end
 
     ss.subspec "scrollview" do |sss|
@@ -174,6 +196,12 @@ Pod::Spec.new do |s|
     ss.header_dir           = "react/renderer/imagemanager"
   end
 
+  s.subspec "imagemanagerUmbrella" do |ss|
+    ss.source_files         = "react/renderer/imagemanager/React/*.h"
+    ss.header_dir           = ""
+    ss.header_mappings_dir  = "react/renderer/imagemanager"
+  end
+
   s.subspec "mounting" do |ss|
     ss.dependency             "React-jsinspectortracing"
     ss.source_files         = podspec_sources("react/renderer/mounting/**/*.{m,mm,cpp,h}", "react/renderer/mounting/**/*.h")
@@ -198,6 +226,12 @@ Pod::Spec.new do |s|
       sss.source_files         = podspec_sources("react/renderer/observers/mutation/**/*.{m,mm,cpp,h}", "react/renderer/observers/mutation/**/*.h")
       sss.exclude_files        = "react/renderer/observers/mutation/tests"
       sss.header_dir           = "react/renderer/observers/mutation"
+    end
+
+    ss.subspec "resize" do |sss|
+      sss.source_files         = podspec_sources("react/renderer/observers/resize/**/*.{m,mm,cpp,h}", "react/renderer/observers/resize/**/*.h")
+      sss.exclude_files        = "react/renderer/observers/resize/tests"
+      sss.header_dir           = "react/renderer/observers/resize"
     end
   end
 
@@ -235,4 +269,6 @@ Pod::Spec.new do |s|
     ss.source_files         = podspec_sources("react/renderer/viewtransition/**/*.{m,mm,cpp,h}", "react/renderer/viewtransition/**/*.h")
     ss.header_dir           = "react/renderer/viewtransition"
   end
+
+  mark_as_react_native_build(s)
 end

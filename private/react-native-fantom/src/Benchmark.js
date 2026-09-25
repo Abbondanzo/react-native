@@ -8,10 +8,10 @@
  * @format
  */
 
+import NativeCPUTime from '../../../packages/react-native/src/private/testing/fantom/specs/NativeCPUTime';
 import {reportBenchmarkResult} from '../runtime/setup';
 import {getConstants} from './index';
 import nullthrows from 'nullthrows';
-import NativeCPUTime from 'react-native/src/private/testing/fantom/specs/NativeCPUTime';
 import {
   Bench,
   type BenchOptions,
@@ -61,8 +61,7 @@ type SuiteResults = Array<Readonly<TaskResult>>;
 type TestWithArgName<TestArgType> = string | ((testArg: TestArgType) => string);
 
 type TestWithArgOptions<TestArgType> =
-  | FnOptions
-  | ((testArg: TestArgType) => FnOptions);
+  FnOptions | ((testArg: TestArgType) => FnOptions);
 
 interface ParameterizedTestFunction {
   <TestArgType>(
