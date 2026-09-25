@@ -9,6 +9,7 @@ package com.facebook.react.views.text
 
 import android.content.res.AssetManager
 import android.graphics.Color
+import android.graphics.RectF
 import android.graphics.Typeface
 import android.os.Build
 import android.text.BoringLayout
@@ -41,6 +42,7 @@ import com.facebook.react.uimanager.PixelUtil
 import com.facebook.react.uimanager.PixelUtil.dpToPx
 import com.facebook.react.uimanager.PixelUtil.pxToDp
 import com.facebook.react.uimanager.ReactAccessibilityDelegate
+import com.facebook.react.util.AndroidVersion.VERSION_CODE_VANILLA_ICE_CREAM
 import com.facebook.react.views.text.internal.span.CustomLetterSpacingSpan
 import com.facebook.react.views.text.internal.span.CustomLineHeightSpan
 import com.facebook.react.views.text.internal.span.CustomStyleSpan
@@ -114,13 +116,34 @@ internal object TextLayoutManager {
 
   private val tagToSpannableCache = ConcurrentHashMap<Int, Spannable>()
 
-  // Lazily cached Method for StaticLayout.Builder.setUseBoundsForWidth (API 35+).
+  // Lazily cached methods for showing glyph ink that overhangs the start of a line (API 35+).
   // Reflection is needed because some internal targets compile against an SDK older than 35.
   private val setUseBoundsForWidthMethod: java.lang.reflect.Method? by lazy {
     try {
       StaticLayout.Builder::class
           .java
           .getMethod("setUseBoundsForWidth", Boolean::class.javaPrimitiveType)
+    } catch (_: ReflectiveOperationException) {
+      null
+    }
+  }
+
+  private val setShiftDrawingOffsetForStartOverhangMethod: java.lang.reflect.Method? by lazy {
+    try {
+      StaticLayout.Builder::class
+          .java
+          .getMethod(
+              "setShiftDrawingOffsetForStartOverhang",
+              Boolean::class.javaPrimitiveType,
+          )
+    } catch (_: ReflectiveOperationException) {
+      null
+    }
+  }
+
+  private val computeDrawingBoundingBoxMethod: java.lang.reflect.Method? by lazy {
+    try {
+      Layout::class.java.getMethod("computeDrawingBoundingBox")
     } catch (_: ReflectiveOperationException) {
       null
     }
@@ -831,18 +854,79 @@ internal object TextLayoutManager {
           YogaMeasureMode.AT_MOST -> min(desiredWidth, floor(width).toInt())
           else -> desiredWidth
         }
-    return buildLayout(
-        text,
-        layoutWidth,
-        includeFontPadding,
-        textBreakStrategy,
-        hyphenationFrequency,
-        alignment,
-        justificationMode,
-        ellipsizeMode,
-        maxNumberOfLines,
-        paint,
-    )
+    val enableStartOverhang = widthYogaMeasureMode == YogaMeasureMode.EXACTLY
+    val layout =
+        buildLayout(
+            text,
+            layoutWidth,
+            includeFontPadding,
+            textBreakStrategy,
+            hyphenationFrequency,
+            alignment,
+            justificationMode,
+            ellipsizeMode,
+            maxNumberOfLines,
+            paint,
+            enableStartOverhang,
+        )
+
+    // Layout.draw shifts negative (left-side) overhang, but RTL line starts can overflow to the
+    // right. Reserve that ink inside an EXACT layout without changing the width reported to Yoga.
+    return if (enableStartOverhang) {
+      adjustLayoutForRtlRightOverhang(layout, layoutWidth) { adjustedWidth ->
+        buildLayout(
+            text,
+            adjustedWidth,
+            includeFontPadding,
+            textBreakStrategy,
+            hyphenationFrequency,
+            alignment,
+            justificationMode,
+            ellipsizeMode,
+            maxNumberOfLines,
+            paint,
+            enableStartOverhang,
+        )
+      }
+    } else {
+      layout
+    }
+  }
+
+  @VisibleForTesting
+  internal fun adjustLayoutForRtlRightOverhang(
+      layout: Layout,
+      layoutWidth: Int,
+      rebuild: (Int) -> Layout,
+  ): Layout {
+    val rightOverhang = getRtlRightOverhang(layout)
+    return if (rightOverhang in 1 until layoutWidth) {
+      rebuild(layoutWidth - rightOverhang)
+    } else {
+      layout
+    }
+  }
+
+  @VisibleForTesting
+  internal fun getRtlRightOverhang(layout: Layout): Int {
+    if (
+        Build.VERSION.SDK_INT < VERSION_CODE_VANILLA_ICE_CREAM ||
+            layout.lineCount == 0 ||
+            (0 until layout.lineCount).any {
+              layout.getParagraphDirection(it) != Layout.DIR_RIGHT_TO_LEFT
+            }
+    ) {
+      return 0
+    }
+
+    val drawingBounds =
+        try {
+          computeDrawingBoundingBoxMethod?.invoke(layout) as? RectF
+        } catch (_: ReflectiveOperationException) {
+          null
+        } ?: return 0
+
+    return ceil(drawingBounds.right - layout.width).toInt().coerceAtLeast(0)
   }
 
   private fun buildLayout(
@@ -856,6 +940,7 @@ internal object TextLayoutManager {
       ellipsizeMode: TextUtils.TruncateAt?,
       maxNumberOfLines: Int,
       paint: TextPaint,
+      enableStartOverhang: Boolean,
   ): Layout {
     val builder =
         StaticLayout.Builder.obtain(text, 0, text.length, paint, layoutWidth)
@@ -875,6 +960,14 @@ internal object TextLayoutManager {
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
       builder.setUseLineSpacingFromFallbacks(true)
+    }
+
+    // Android shifts negative (left-side) start overhang itself. RTL start overhang is on the
+    // right, so createLayout reserves that space in a second pass while preserving the EXACT Yoga
+    // measurement returned to the caller.
+    if (Build.VERSION.SDK_INT >= VERSION_CODE_VANILLA_ICE_CREAM) {
+      setUseBoundsForWidthMethod?.invoke(builder, enableStartOverhang)
+      setShiftDrawingOffsetForStartOverhangMethod?.invoke(builder, enableStartOverhang)
     }
 
     return builder.build()
@@ -1108,6 +1201,7 @@ internal object TextLayoutManager {
                 ellipsizeMode,
                 maximumNumberOfLines,
                 paint,
+                /* enableStartOverhang = */ false,
             )
         if (calculateLineCount(tightenedLayout, maximumNumberOfLines) == lineCount) {
           layout = tightenedLayout
