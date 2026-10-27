@@ -1132,16 +1132,15 @@ static inline UIViewAnimationOptions animationOptionsWithCurve(UIViewAnimationCu
 /// sorting allows us to do that.
 - (NSArray<UIView *> *)_sortedContentSubviewsWithHorizontal:(BOOL)horizontal
 {
-  NSArray<UIView *> *subviews = _contentView.subviews;
-  return [subviews sortedArrayUsingComparator:^NSComparisonResult(UIView *a, UIView *b) {
-    CGFloat offsetA = horizontal ? CGRectGetMinX(a.frame) : CGRectGetMinY(a.frame);
-    CGFloat offsetB = horizontal ? CGRectGetMinX(b.frame) : CGRectGetMinY(b.frame);
-    if (offsetA != offsetB) {
-      return offsetA < offsetB ? NSOrderedAscending : NSOrderedDescending;
-    }
-    // Stable ordering for ties.
-    return [@([subviews indexOfObject:a]) compare:@([subviews indexOfObject:b])];
-  }];
+  return [_contentView.subviews sortedArrayWithOptions:NSSortStable
+                                       usingComparator:^NSComparisonResult(UIView *a, UIView *b) {
+                                         CGFloat offsetA = horizontal ? CGRectGetMinX(a.frame) : CGRectGetMinY(a.frame);
+                                         CGFloat offsetB = horizontal ? CGRectGetMinX(b.frame) : CGRectGetMinY(b.frame);
+                                         if (offsetA == offsetB) {
+                                           return NSOrderedSame;
+                                         }
+                                         return offsetA < offsetB ? NSOrderedAscending : NSOrderedDescending;
+                                       }];
 }
 
 - (void)_adjustForMaintainVisibleContentPosition
