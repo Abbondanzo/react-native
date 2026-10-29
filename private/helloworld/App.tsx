@@ -10,6 +10,7 @@
 import * as React from 'react';
 import {useState} from 'react';
 import {
+  I18nManager,
   type SafeAreaInsets,
   ScrollView,
   StatusBar,
@@ -22,15 +23,18 @@ import {
 function App(): React.ReactNode {
   const isDarkMode = useColorScheme() === 'dark';
   const [insets, setInsets] = useState<SafeAreaInsets | null>(null);
+  // Insets are physical edges, but Yoga treats paddingLeft/paddingRight as
+  // start/end when swapLeftAndRightInRTL is on.
+  const swap = I18nManager.isRTL && I18nManager.doLeftAndRightSwapInRTL;
 
   return (
     <View
       style={
         insets && {
           paddingTop: insets.top,
-          paddingRight: insets.right,
+          paddingRight: swap ? insets.left : insets.right,
           paddingBottom: insets.bottom,
-          paddingLeft: insets.left,
+          paddingLeft: swap ? insets.right : insets.left,
         }
       }
       experimental_onSafeAreaInsetsChange={event =>

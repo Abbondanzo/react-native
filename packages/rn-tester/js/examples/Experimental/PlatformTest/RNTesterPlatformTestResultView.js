@@ -26,6 +26,7 @@ import {memo, useCallback, useMemo, useState} from 'react';
 import {
   Button,
   FlatList,
+  I18nManager,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -241,6 +242,20 @@ export default function RNTesterPlatformTestResultView(
     },
     [],
   );
+  const safeAreaPaddingStyle = useMemo(() => {
+    if (safeAreaInsets == null) {
+      return null;
+    }
+    // Insets are physical edges, but Yoga treats paddingLeft/paddingRight as
+    // start/end when swapLeftAndRightInRTL is on.
+    const swap = I18nManager.isRTL && I18nManager.doLeftAndRightSwapInRTL;
+    return {
+      paddingTop: safeAreaInsets.top,
+      paddingRight: swap ? safeAreaInsets.left : safeAreaInsets.right,
+      paddingBottom: safeAreaInsets.bottom,
+      paddingLeft: swap ? safeAreaInsets.right : safeAreaInsets.left,
+    };
+  }, [safeAreaInsets]);
 
   const handleReset = useCallback(() => {
     setFilterFailStatus(false);
@@ -285,12 +300,7 @@ export default function RNTesterPlatformTestResultView(
               height: '100%',
               flexDirection: 'column',
             },
-            safeAreaInsets != null && {
-              paddingTop: safeAreaInsets.top,
-              paddingRight: safeAreaInsets.right,
-              paddingBottom: safeAreaInsets.bottom,
-              paddingLeft: safeAreaInsets.left,
-            },
+            safeAreaPaddingStyle,
           ]}>
           <View style={styles.resultsHeader}>
             <View style={styles.titleContainer}>
